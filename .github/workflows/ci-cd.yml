@@ -1,0 +1,165 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: aureon-backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./aureon-backend
+      run: npm ci
+
+    - name: Run linter
+      working-directory: ./aureon-backend
+      run: npm run lint --if-present
+
+    - name: Run tests
+      working-directory: ./aureon-backend
+      run: npm run test:ci
+      env:
+        NODE_ENV: test
+        JWT_SECRET: test-secret-key-for-ci
+        JWT_REFRESH_SECRET: test-refresh-secret-for-ci
+        USE_POSTGRES: false
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./aureon-backend/coverage/coverage-final.json
+        flags: backend
+        name: codecov-backend
+
+    - name: Generate coverage badge
+      if: matrix.node-version == '20.x'
+      uses: cicirello/jacoco-badge-generator@v2
+      with:
+        jacoco-csv-file: ./aureon-backend/coverage/lcov.info
+        badges-directory: ./aureon-backend/coverage/badges
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: aureon-backend/package-lock.json
+
+    - name: Install backend dependencies
+      working-directory: ./aureon-backend
+      run: npm ci
+
+    - name: Install frontend dependencies
+      working-directory: ./aureon-os
+      run: npm ci
+
+    - name: Build frontend
+      working-directory: ./aureon-os
+      run: npm run build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: |
+          aureon-os/dist
+          aureon-backend/
+          !aureon-backend/node_modules
+          !aureon-backend/tests
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Run npm audit
+      working-directory: ./aureon-backend
+      run: npm audit --audit-level=moderate
+
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Adicione aqui os comandos de deploy para staging
+        # Exemplo: rsync, scp, docker, etc.
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Adicione aqui os comandos de deploy para produção
+        # Exemplo: rsync, scp, docker, kubectl, etc.
+
+    - name: Notify deployment
+      if: success()
+      run: |
+        echo "✅ Production deployment successful!"
+        # Adicione notificações (Slack, Discord, Email, etc.)

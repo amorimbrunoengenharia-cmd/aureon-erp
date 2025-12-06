@@ -1,0 +1,91 @@
+/**
+ * Sequelize CLI Configuration
+ * 
+ * Commands:
+ *   npx sequelize-cli db:migrate              - Run all pending migrations
+ *   npx sequelize-cli db:migrate:undo         - Undo last migration
+ *   npx sequelize-cli db:migrate:undo:all     - Undo all migrations
+ *   npx sequelize-cli db:migrate:status       - Show migration status
+ *   npx sequelize-cli migration:generate      - Create new migration
+ *   npx sequelize-cli db:seed:all             - Run all seeders
+ */
+
+require('dotenv').config();
+
+module.exports = {
+  development: {
+    dialect: 'sqlite',
+    storage: './database.sqlite',
+    logging: console.log,
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: true
+    }
+  },
+  test: {
+    dialect: 'sqlite',
+    storage: ':memory:',
+    logging: false,
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: true
+    }
+  },
+  staging: {
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: {
+      ssl: process.env.DB_SSL === 'true' ? {
+        require: true,
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+      } : false
+    },
+    pool: {
+      max: parseInt(process.env.DB_POOL_MAX) || 10,
+      min: parseInt(process.env.DB_POOL_MIN) || 2,
+      acquire: 30000,
+      idle: 10000
+    },
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: true
+    }
+  },
+  production: {
+    username: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+      },
+      statement_timeout: 30000,
+      idle_in_transaction_session_timeout: 60000
+    },
+    pool: {
+      max: parseInt(process.env.DB_POOL_MAX) || 20,
+      min: parseInt(process.env.DB_POOL_MIN) || 5,
+      acquire: 30000,
+      idle: 10000,
+      evict: 10000
+    },
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: true
+    }
+  }
+};
