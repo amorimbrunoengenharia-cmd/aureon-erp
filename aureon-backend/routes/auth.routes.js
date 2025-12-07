@@ -86,7 +86,8 @@ router.post('/login', authLimiter, async (req, res, next) => {
       { 
         id: user.id,
         username: user.username,
-        role: user.role
+        role: user.role,
+        tenant_id: user.tenant_id
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
@@ -107,6 +108,7 @@ router.post('/login', authLimiter, async (req, res, next) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        tenant_id: user.tenant_id,
         settings: user.settings
       },
       accessToken,

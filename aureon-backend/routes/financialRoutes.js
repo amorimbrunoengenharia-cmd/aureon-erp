@@ -162,9 +162,9 @@ router.get('/projections', authorize(['admin', 'gerente', 'ceo']), async (req, r
 /**
  * GET /api/financial/dashboard
  * Dashboard Completo (DRE + Fluxo + Indicadores + Projeções)
- * Permissões: admin, gerente, ceo
+ * Permissões: admin, gerente, ceo, financeiro
  */
-router.get('/dashboard', authorize(['admin', 'gerente', 'ceo']), async (req, res) => {
+router.get('/dashboard', authorize(['admin', 'gerente', 'ceo', 'financeiro']), async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 

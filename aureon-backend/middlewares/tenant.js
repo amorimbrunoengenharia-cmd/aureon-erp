@@ -10,6 +10,16 @@ import logger from '../utils/logger.js';
  */
 export const tenantMiddleware = async (req, res, next) => {
   try {
+    // 🔍 DEBUG: Verificar estado de req.user no início
+    logger.debug('🔍 tenantMiddleware iniciado', {
+      hasUser: !!req.user,
+      userId: req.user?.id,
+      username: req.user?.username,
+      userTenantId: req.user?.tenant_id,
+      path: req.path,
+      method: req.method
+    });
+
     let tenant = null;
     let tenantIdentifier = null;
     let identificationMethod = null;
@@ -56,6 +66,35 @@ export const tenantMiddleware = async (req, res, next) => {
       }
     }
 
+    // Método 5: Usar tenant_id do usuário autenticado (fallback)
+    if (!tenant && req.user && req.user.tenant_id) {
+      logger.debug('🔍 Tentando método 5: req.user.tenant_id', {
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        username: req.user.username
+      });
+      tenant = await Tenant.findByPk(req.user.tenant_id);
+      if (tenant) {
+        tenantIdentifier = req.user.tenant_id;
+        identificationMethod = 'user-tenant';
+        logger.info('✅ Tenant identificado via JWT', {
+          tenant_id: tenant.id,
+          tenant_name: tenant.name,
+          user: req.user.username
+        });
+      } else {
+        logger.warn('⚠️ tenant_id no JWT não encontrado no banco', {
+          tenant_id: req.user.tenant_id
+        });
+      }
+    } else if (!tenant) {
+      logger.warn('⚠️ Método 5 falhou - req.user:', {
+        hasUser: !!req.user,
+        hasTenantId: req.user ? !!req.user.tenant_id : false,
+        user: req.user ? { id: req.user.id, username: req.user.username } : null
+      });
+    }
+
     // Se não encontrou tenant, verificar se usuário é super admin
     if (!tenant && req.user && req.user.is_super_admin) {
       // Super admin pode acessar sem tenant específico
@@ -77,7 +116,8 @@ export const tenantMiddleware = async (req, res, next) => {
           'Header: X-Tenant-ID (UUID)',
           'Header: X-Tenant-Slug (tenant slug)',
           'Subdomain: {slug}.aureon.com',
-          'Custom domain: configured in tenant settings'
+          'Custom domain: configured in tenant settings',
+          'Authenticated user tenant_id (automatic)'
         ]
       });
     }

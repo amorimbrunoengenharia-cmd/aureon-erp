@@ -15,8 +15,16 @@ class FinancialDashboardService {
    */
   async getDRE(tenantId, startDate, endDate) {
     try {
-      const where = {
+      // Where para Sales (tem tenant_id)
+      const whereSales = {
         tenant_id: tenantId,
+        created_at: {
+          [Op.between]: [new Date(startDate), new Date(endDate)]
+        }
+      };
+
+      // Where para FinanceTransaction (NÃO tem tenant_id)
+      const whereFinance = {
         created_at: {
           [Op.between]: [new Date(startDate), new Date(endDate)]
         }
@@ -25,22 +33,22 @@ class FinancialDashboardService {
       // 1. RECEITAS (Vendas concluídas)
       const vendas = await Sale.findAll({
         where: {
-          ...where,
+          ...whereSales,
           status: 'CONCLUIDA'
         },
-        include: [{ model: Product, attributes: ['preco_custo'] }]
+        include: [{ model: Product, as: 'product', attributes: ['preco_custo'] }]
       });
 
-      const receitaBruta = vendas.reduce((sum, venda) => sum + parseFloat(venda.valor_total || 0), 0);
+      const receitaBruta = vendas.reduce((sum, venda) => sum + parseFloat(venda.valor_venda || 0), 0);
       const custoVendas = vendas.reduce((sum, venda) => {
-        const precoCusto = parseFloat(venda.Product?.preco_custo || 0);
+        const precoCusto = parseFloat(venda.product?.preco_custo || 0);
         return sum + (precoCusto * venda.quantidade);
       }, 0);
 
       // 2. DESPESAS (Transações de saída)
       const despesas = await FinanceTransaction.findAll({
         where: {
-          ...where,
+          ...whereFinance,
           tipo: 'SAIDA'
         },
         attributes: [
@@ -63,7 +71,7 @@ class FinancialDashboardService {
       // 3. OUTRAS RECEITAS (Transações de entrada não relacionadas a vendas)
       const outrasReceitas = await FinanceTransaction.findAll({
         where: {
-          ...where,
+          ...whereFinance,
           tipo: 'ENTRADA',
           sale_id: null
         }
@@ -122,8 +130,8 @@ class FinancialDashboardService {
    */
   async getFluxoCaixa(tenantId, startDate, endDate, agrupamento = 'dia') {
     try {
+      // FinanceTransaction NÃO tem tenant_id
       const where = {
-        tenant_id: tenantId,
         data: {
           [Op.between]: [new Date(startDate), new Date(endDate)]
         }
@@ -146,7 +154,7 @@ class FinancialDashboardService {
       const transacoes = await FinanceTransaction.findAll({
         where,
         attributes: [
-          [sequelize.fn('DATE_FORMAT', sequelize.col('data'), dateFormat), 'periodo'],
+          [sequelize.fn('strftime', dateFormat, sequelize.col('data')), 'periodo'],
           'tipo',
           [sequelize.fn('SUM', sequelize.col('valor')), 'total']
         ],
@@ -232,12 +240,12 @@ class FinancialDashboardService {
           ...where,
           status: 'CONCLUIDA'
         },
-        include: [{ model: Product }]
+        include: [{ model: Product, as: 'product' }]
       });
 
-      const totalVendas = vendas.reduce((sum, v) => sum + parseFloat(v.valor_total || 0), 0);
+      const totalVendas = vendas.reduce((sum, v) => sum + parseFloat(v.valor_venda || 0), 0);
       const custoTotal = vendas.reduce((sum, v) => {
-        const custo = parseFloat(v.Product?.preco_custo || 0);
+        const custo = parseFloat(v.product?.preco_custo || 0);
         return sum + (custo * v.quantidade);
       }, 0);
 
@@ -271,10 +279,11 @@ class FinancialDashboardService {
           'produto_id',
           [sequelize.fn('COUNT', sequelize.col('Sale.id')), 'quantidade_vendas'],
           [sequelize.fn('SUM', sequelize.col('quantidade')), 'quantidade_total'],
-          [sequelize.fn('SUM', sequelize.col('valor_total')), 'receita_total']
+          [sequelize.fn('SUM', sequelize.col('valor_venda')), 'receita_total']
         ],
         include: [{
           model: Product,
+          as: 'product',
           attributes: ['produto', 'preco_venda']
         }],
         group: ['produto_id'],
@@ -352,7 +361,7 @@ class FinancialDashboardService {
           vendasPorMes[mes] = { quantidade: 0, valor: 0 };
         }
         vendasPorMes[mes].quantidade++;
-        vendasPorMes[mes].valor += parseFloat(venda.valor_total || 0);
+        vendasPorMes[mes].valor += parseFloat(venda.valor_venda || 0);
       });
 
       const meses = Object.keys(vendasPorMes).sort();

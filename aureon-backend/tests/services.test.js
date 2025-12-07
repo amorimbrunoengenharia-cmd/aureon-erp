@@ -4,7 +4,7 @@
  */
 
 import request from 'supertest';
-import app from '../../server.js';
+import app from '../server.js';
 import { sequelize } from '../../config/database.js';
 
 describe('Specialized Services', () => {

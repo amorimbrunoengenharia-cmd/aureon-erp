@@ -15,6 +15,7 @@ import { rateLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import traceMiddleware from './middlewares/trace.js';
 import { swaggerSpec, swaggerUi, swaggerUiOptions } from './config/swagger.js';
+import { initializeSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './config/sentry.js';
 
 // Routes
 import authRoutes from './routes/auth.routes.js';
@@ -40,8 +41,15 @@ import supplierQuotationRoutes from './routes/supplierQuotation.routes.js';
 
 dotenv.config();
 
+// Initialize Sentry (must be first!)
+initializeSentry();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// ===== SENTRY MIDDLEWARES (MUST BE FIRST) =====
+app.use(sentryRequestHandler());
+app.use(sentryTracingHandler());
 
 // ===== MIDDLEWARES =====
 // Security headers with proper CSP for API
@@ -253,7 +261,9 @@ app.use('/api/financial', financialRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/customer', customerRoutes);
 
-// ===== ERROR HANDLER =====
+// ===== ERROR HANDLERS =====
+// Sentry error handler must be BEFORE other error handlers
+app.use(sentryErrorHandler());
 app.use(errorHandler);
 
 // ===== DATABASE CONNECTION & SERVER START =====

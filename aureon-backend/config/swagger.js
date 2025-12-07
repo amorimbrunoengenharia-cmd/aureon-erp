@@ -7,10 +7,46 @@ const options = {
     info: {
       title: 'AUREON ERP API',
       version: '1.0.0',
-      description: 'Complete ERP system API for optical retail management with sales, inventory, finance, and client management',
+      description: `
+# AUREON ERP API Documentation
+
+Sistema ERP completo para gestão de óticas com módulos de:
+- 💰 **Financeiro**: DRE, Fluxo de Caixa, Indicadores, Projeções
+- 📦 **Estoque**: Controle de produtos, movimentações, alertas
+- 🛒 **Vendas**: PDV, prescrições, marketplace integrado
+- 👥 **Clientes**: CRM, histórico, análises
+- 📊 **Analytics**: Dashboards, relatórios, insights
+
+## 🚀 Início Rápido
+
+1. Faça login em \`/api/auth/login\` com credenciais padrão:
+   - Username: \`admin\`
+   - Password: \`admin123\`
+
+2. Use o \`accessToken\` retornado no header:
+   \`\`\`
+   Authorization: Bearer seu-token-aqui
+   \`\`\`
+
+3. Explore os endpoints abaixo!
+
+## 🔐 Autenticação
+
+Todos os endpoints (exceto login) requerem JWT token no header Authorization.
+
+## 🏢 Multi-Tenant
+
+O tenant é identificado automaticamente via JWT. Opcionalmente pode enviar header \`X-Tenant-ID\`.
+
+## 📝 Mais Informações
+
+- [Developer Guide](../DEVELOPER_GUIDE.md)
+- [GitHub Repository](https://github.com/seu-org/aureon-erp)
+      `,
       contact: {
         name: 'AUREON Development Team',
-        email: 'dev@aureon.com'
+        email: 'dev@aureon.com',
+        url: 'https://aureon.com'
       },
       license: {
         name: 'MIT',
@@ -230,15 +266,27 @@ const options = {
       }
     ]
   },
-  apis: ['./routes/*.js'] // Path to the API routes files
+  apis: [
+    './routes/*.js',
+    './docs/*.js'  // Include docs folder for schemas
+  ]
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
 export { swaggerUi };
 export const swaggerUiOptions = {
   explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'AUREON ERP API Documentation'
+  customCss: `
+    .swagger-ui .topbar { display: none }
+    .swagger-ui .info { margin: 30px 0; }
+    .swagger-ui .info .title { font-size: 36px; }
+    .swagger-ui .scheme-container { 
+      background: #1f8ef1; 
+      box-shadow: 0 1px 2px 0 rgba(0,0,0,.15);
+    }
+  `,
+  customSiteTitle: 'AUREON ERP API Documentation',
+  customfavIcon: '/favicon.ico'
 };
 
 export default { swaggerSpec, swaggerUi, swaggerUiOptions };
