@@ -24,38 +24,29 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-        cache-dependency-path: aureon-backend/package-lock.json
+        cache-dependency-path: aureon-os/package-lock.json
 
     - name: Install dependencies
-      working-directory: ./aureon-backend
+      working-directory: ./aureon-os
       run: npm ci
 
     - name: Run linter
-      working-directory: ./aureon-backend
+      working-directory: ./aureon-os
       run: npm run lint --if-present
 
     - name: Run tests
-      working-directory: ./aureon-backend
-      run: npm run test:ci
+      working-directory: ./aureon-os
+      run: npm run test:ci --if-present
       env:
         NODE_ENV: test
-        JWT_SECRET: test-secret-key-for-ci
-        JWT_REFRESH_SECRET: test-refresh-secret-for-ci
-        USE_POSTGRES: false
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
+      if: hashFiles('./aureon-os/coverage/coverage-final.json') != ''
       with:
-        files: ./aureon-backend/coverage/coverage-final.json
-        flags: backend
-        name: codecov-backend
-
-    - name: Generate coverage badge
-      if: matrix.node-version == '20.x'
-      uses: cicirello/jacoco-badge-generator@v2
-      with:
-        jacoco-csv-file: ./aureon-backend/coverage/lcov.info
-        badges-directory: ./aureon-backend/coverage/badges
+        files: ./aureon-os/coverage/coverage-final.json
+        flags: frontend
+        name: codecov-frontend
 
   build:
     name: Build Application
@@ -71,13 +62,9 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'npm'
-        cache-dependency-path: aureon-backend/package-lock.json
+        cache-dependency-path: aureon-os/package-lock.json
 
-    - name: Install backend dependencies
-      working-directory: ./aureon-backend
-      run: npm ci
-
-    - name: Install frontend dependencies
+    - name: Install dependencies
       working-directory: ./aureon-os
       run: npm ci
 
@@ -89,11 +76,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: build-artifacts
-        path: |
-          aureon-os/dist
-          aureon-backend/
-          !aureon-backend/node_modules
-          !aureon-backend/tests
+        path: aureon-os/dist
 
   security:
     name: Security Scan
@@ -105,7 +88,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Run npm audit
-      working-directory: ./aureon-backend
+      working-directory: ./aureon-os
       run: npm audit --audit-level=moderate
 
     - name: Run Snyk to check for vulnerabilities
