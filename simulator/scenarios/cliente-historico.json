@@ -1,0 +1,108 @@
+{
+  "id": "cliente-historico",
+  "name": "Histórico de compras do cliente",
+  "description": "Lista histórico completo de compras de um cliente",
+  "priority": "M",
+  "tags": ["customer", "medium", "history"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 2,
+              "preco_unitario": 50.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 100.00
+          }
+        }
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes/{{clientId}}/historico",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.vendas as historicoVendas", "body.total_gasto as totalGasto"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "body": "vendas"
+      },
+      "failure_message": "Histórico deve conter vendas do cliente"
+    },
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "cliente_id": "{{clientId}}"
+        },
+        "operator": "greater_than",
+        "expected": 0
+      },
+      "failure_message": "Deve haver vendas para o cliente"
+    }
+  ],
+  "artifacts_to_collect": ["api_log"]
+}

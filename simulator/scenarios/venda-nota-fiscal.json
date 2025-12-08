@@ -1,0 +1,108 @@
+{
+  "id": "venda-nota-fiscal",
+  "name": "Emissão de nota fiscal",
+  "description": "Emite nota fiscal eletrônica após venda concluída",
+  "priority": "M",
+  "tags": ["sales", "medium", "nfe"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 3,
+              "preco_unitario": 100.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 300.00
+          }
+        }
+      },
+      "capture": ["body.id as saleId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /nfe/emitir",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "venda_id": "{{saleId}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.nfe_numero as nfeNumero", "body.nfe_chave as nfeChave"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "notas_fiscais",
+        "where": {
+          "venda_id": "{{saleId}}",
+          "status": "EMITIDA"
+        }
+      },
+      "failure_message": "Nota fiscal deve ser emitida"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "nfe.issued",
+        "payload_contains": {
+          "venda_id": "{{saleId}}"
+        }
+      },
+      "failure_message": "Evento nfe.issued deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

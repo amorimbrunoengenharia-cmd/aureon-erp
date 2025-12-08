@@ -1,0 +1,49 @@
+{
+  "id": "health-check",
+  "name": "Health check dos serviços",
+  "description": "Verifica saúde de todos os serviços do sistema",
+  "priority": "XS",
+  "tags": ["health", "critical", "monitoring"],
+  "preconditions": {
+    "services": ["backend"]
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "GET /health",
+      "params": {},
+      "expected": {
+        "status": 200,
+        "body.status": "healthy"
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /health/db",
+      "params": {},
+      "expected": {
+        "status": 200,
+        "body.database": "connected"
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /health/events",
+      "params": {},
+      "expected": {
+        "status": 200,
+        "body.eventbus": "connected"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "status": 200
+      },
+      "failure_message": "Todos os health checks devem retornar 200"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "performance_metrics"]
+}

@@ -1,0 +1,93 @@
+{
+  "id": "backup-restore",
+  "name": "Backup e restore de banco de dados",
+  "description": "Cria backup do banco e valida possibilidade de restore",
+  "priority": "L",
+  "tags": ["backup", "low", "database"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /backups/criar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "tipo": "FULL",
+          "descricao": "Backup de simulação"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.backup_id as backupId", "body.arquivo as arquivoBackup"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 2000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /backups/{{backupId}}/status",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "CONCLUIDO"
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /backups",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "backups",
+        "where": {
+          "id": "{{backupId}}",
+          "status": "CONCLUIDO"
+        }
+      },
+      "failure_message": "Backup deve estar concluído"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "backup.completed",
+        "payload_contains": {
+          "backup_id": "{{backupId}}"
+        }
+      },
+      "failure_message": "Evento backup.completed deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

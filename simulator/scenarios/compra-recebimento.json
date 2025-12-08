@@ -1,0 +1,120 @@
+{
+  "id": "compra-recebimento",
+  "name": "Recebimento de compra com entrada no estoque",
+  "description": "Registra recebimento de pedido de compra com atualização de estoque",
+  "priority": "M",
+  "tags": ["purchase", "medium", "stock"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "estoque",
+          "password": "estoque123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId", "body.data[0].estoque_atual as estoqueAntes"]
+    },
+    {
+      "type": "api",
+      "action": "POST /compras",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "fornecedor": "Fornecedor ABC",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 50,
+              "preco_unitario": 30.00
+            }
+          ]
+        }
+      },
+      "capture": ["body.id as compraId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /compras/{{compraId}}/receber",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "quantidade_recebida": 50,
+          "nota_fiscal": "NF-12345"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/{{productId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.estoque_atual as estoqueDepois"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "compras",
+        "column": "status",
+        "where": {
+          "id": "{{compraId}}"
+        },
+        "operator": "equals",
+        "expected": "RECEBIDA"
+      },
+      "failure_message": "Compra deve estar com status RECEBIDA"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "estoque_movimentos",
+        "where": {
+          "tipo": "ENTRADA",
+          "compra_id": "{{compraId}}"
+        }
+      },
+      "failure_message": "Movimento de entrada deve ser registrado"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "purchase.received"
+      },
+      "failure_message": "Evento purchase.received deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

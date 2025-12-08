@@ -1,0 +1,68 @@
+{
+  "id": "integracao-contabil",
+  "name": "Integração contábil",
+  "description": "Exporta movimentações para sistema contábil",
+  "priority": "L",
+  "tags": ["integration", "low", "accounting"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /integracoes/contabil/sincronizar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "data_inicio": "2024-12-01",
+          "data_fim": "2024-12-08"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.lancamentos as totalLancamentos", "body.sincronizacao_id as sincronizacaoId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "sincronizacoes_contabil",
+        "where": {
+          "id": "{{sincronizacaoId}}",
+          "status": "CONCLUIDA"
+        }
+      },
+      "failure_message": "Sincronização contábil deve estar concluída"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "accounting.synced"
+      },
+      "failure_message": "Evento accounting.synced deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

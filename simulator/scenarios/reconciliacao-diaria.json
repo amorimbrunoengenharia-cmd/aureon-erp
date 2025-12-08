@@ -1,0 +1,90 @@
+{
+  "id": "reconciliacao-diaria",
+  "name": "Reconciliação diária de vendas",
+  "description": "Valida processo de reconciliação de vendas do dia",
+  "priority": "M",
+  "tags": ["reconciliation", "finance"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /reconciliacao/processar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "data": "2025-12-08",
+          "tipo": "VENDAS"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.id as reconciliacaoId", "body.total_vendas as totalVendas"]
+    },
+    {
+      "type": "api",
+      "action": "GET /reconciliacao/{{reconciliacaoId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "CONCLUIDA"
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /reconciliacao/{{reconciliacaoId}}/relatorio",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "reconciliacoes",
+        "where": {
+          "id": "{{reconciliacaoId}}",
+          "status": "CONCLUIDA"
+        }
+      },
+      "failure_message": "Reconciliação deve estar CONCLUIDA"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "reconciliation.completed",
+        "payload_contains": {
+          "reconciliacao_id": "{{reconciliacaoId}}"
+        }
+      },
+      "failure_message": "Evento reconciliation.completed deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "api_log"]
+}

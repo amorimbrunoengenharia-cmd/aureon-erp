@@ -1,0 +1,107 @@
+{
+  "id": "marketplace-venda-recebida",
+  "name": "Recebimento de venda do marketplace",
+  "description": "Simula webhook de venda do Mercado Livre e processa no sistema",
+  "priority": "S",
+  "tags": ["marketplace", "high", "webhook", "integration"],
+  "preconditions": {
+    "services": ["backend", "marketplace-mock"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /marketplace/webhooks",
+      "params": {
+        "body": {
+          "resource": "/orders/12345",
+          "topic": "orders",
+          "order_id": "12345",
+          "items": [
+            {
+              "sku": "{{productId}}",
+              "quantity": 2,
+              "unit_price": 50.00
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 2000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "origem": "MARKETPLACE",
+          "marketplace_order_id": "12345"
+        }
+      },
+      "failure_message": "Venda do marketplace deve ser criada no sistema"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "marketplace.order.received",
+        "payload_contains": {
+          "order_id": "12345"
+        }
+      },
+      "failure_message": "Evento marketplace.order.received deve ser publicado"
+    },
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "produtos",
+        "column": "estoque_atual",
+        "where": {
+          "id": "{{productId}}"
+        },
+        "operator": "less_than",
+        "expected": 100
+      },
+      "failure_message": "Estoque deve ser decrementado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

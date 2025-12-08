@@ -1,0 +1,89 @@
+{
+  "id": "cliente-criar",
+  "name": "Criar novo cliente",
+  "description": "Valida criação de cliente com validação de CPF",
+  "priority": "S",
+  "tags": ["clients", "sales"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "nome": "Cliente Simulação",
+          "cpf": "11122233344",
+          "telefone": "11987654321",
+          "email": "cliente@test.com",
+          "endereco": {
+            "rua": "Rua Teste",
+            "numero": "123",
+            "bairro": "Centro",
+            "cidade": "São Paulo",
+            "estado": "SP",
+            "cep": "01234567"
+          }
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.cpf": "11122233344"
+      },
+      "capture": ["body.id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes/{{clientId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.nome": "Cliente Simulação"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "clientes",
+        "where": {
+          "id": "{{clientId}}",
+          "cpf": "11122233344"
+        }
+      },
+      "failure_message": "Cliente deve existir no banco"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "client.created",
+        "payload_contains": {
+          "client_id": "{{clientId}}"
+        }
+      },
+      "failure_message": "Evento client.created deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "event_log"]
+}

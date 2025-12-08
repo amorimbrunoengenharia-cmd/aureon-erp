@@ -1,0 +1,66 @@
+{
+  "id": "login-valido",
+  "name": "Login com credenciais válidas",
+  "description": "Valida fluxo completo de autenticação com credenciais válidas",
+  "priority": "XS",
+  "tags": ["auth", "critical", "smoke"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.accessToken": "string",
+        "body.user.username": "ceo"
+      },
+      "capture": [
+        "body.accessToken as token",
+        "body.user.id as userId"
+      ]
+    },
+    {
+      "type": "api",
+      "action": "GET /auth/me",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.id": "{{userId}}",
+        "body.username": "ceo"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "status": 200
+      },
+      "failure_message": "Login should return 200"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "usuarios",
+        "where": {
+          "username": "ceo"
+        }
+      },
+      "failure_message": "User should exist in database"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "performance_metrics"]
+}

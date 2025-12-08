@@ -1,0 +1,121 @@
+{
+  "id": "estoque-ajuste",
+  "name": "Ajuste manual de estoque",
+  "description": "Realiza ajuste de estoque por inventário físico com auditoria",
+  "priority": "S",
+  "tags": ["stock", "high", "adjustment"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "estoque",
+          "password": "estoque123"
+        }
+      },
+      "capture": ["body.accessToken as token", "body.user.id as userId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId", "body.data[0].estoque_atual as estoqueAtual"]
+    },
+    {
+      "type": "api",
+      "action": "POST /estoque/ajustes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "produto_id": "{{productId}}",
+          "quantidade_nova": 50,
+          "motivo": "Inventário físico - contagem manual",
+          "tipo": "INVENTARIO"
+        }
+      },
+      "expected": {
+        "status": 201
+      },
+      "capture": ["body.id as ajusteId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/{{productId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.estoque_atual": 50
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "produtos",
+        "column": "estoque_atual",
+        "where": {
+          "id": "{{productId}}"
+        },
+        "operator": "equals",
+        "expected": 50
+      },
+      "failure_message": "Estoque deve ser ajustado para 50"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "estoque_ajustes",
+        "where": {
+          "id": "{{ajusteId}}",
+          "tipo": "INVENTARIO"
+        }
+      },
+      "failure_message": "Ajuste de inventário deve existir"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "stock.adjusted",
+        "payload_contains": {
+          "ajuste_id": "{{ajusteId}}"
+        }
+      },
+      "failure_message": "Evento stock.adjusted deve ser publicado"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "ADJUST",
+          "resource_type": "estoque",
+          "user_id": "{{userId}}"
+        }
+      },
+      "failure_message": "Log de auditoria deve ser criado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

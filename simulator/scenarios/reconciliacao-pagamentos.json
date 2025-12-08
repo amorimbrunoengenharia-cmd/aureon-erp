@@ -1,0 +1,97 @@
+{
+  "id": "reconciliacao-pagamentos",
+  "name": "Reconciliação de pagamentos",
+  "description": "Reconcilia pagamentos recebidos com vendas registradas",
+  "priority": "M",
+  "tags": ["reconciliation", "medium", "payment"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /reconciliacao/processar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "data_inicio": "2024-12-01",
+          "data_fim": "2024-12-08",
+          "tipo": "PAGAMENTOS"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.reconciliacao_id as reconciliacaoId", "body.total_processado as totalProcessado"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /reconciliacao/{{reconciliacaoId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "CONCLUIDA"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "reconciliacoes",
+        "where": {
+          "id": "{{reconciliacaoId}}",
+          "status": "CONCLUIDA"
+        }
+      },
+      "failure_message": "Reconciliação deve estar concluída"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "reconciliation.completed",
+        "payload_contains": {
+          "reconciliacao_id": "{{reconciliacaoId}}"
+        }
+      },
+      "failure_message": "Evento reconciliation.completed deve ser publicado"
+    },
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "reconciliacao_items",
+        "where": {
+          "reconciliacao_id": "{{reconciliacaoId}}"
+        },
+        "operator": "greater_than",
+        "expected": 0
+      },
+      "failure_message": "Deve haver itens processados na reconciliação"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

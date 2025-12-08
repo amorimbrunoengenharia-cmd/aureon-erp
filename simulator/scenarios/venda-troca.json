@@ -1,0 +1,128 @@
+{
+  "id": "venda-troca",
+  "name": "Troca de produto",
+  "description": "Realiza troca de produto com devolução ao estoque e nova venda",
+  "priority": "S",
+  "tags": ["sales", "high", "exchange", "stock"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": [
+        "body.data[0].id as produtoAntigoId",
+        "body.data[1].id as produtoNovoId"
+      ]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{produtoAntigoId}}",
+              "quantidade": 1,
+              "preco_unitario": 50.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 50.00
+          }
+        }
+      },
+      "capture": ["body.id as vendaOriginalId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas/{{vendaOriginalId}}/trocar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "produto_novo_id": "{{produtoNovoId}}",
+          "motivo": "Cliente preferiu outro produto"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.troca_id as trocaId", "body.nova_venda_id as novaVendaId"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "trocas",
+        "where": {
+          "id": "{{trocaId}}",
+          "venda_original_id": "{{vendaOriginalId}}"
+        }
+      },
+      "failure_message": "Troca deve ser registrada"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "id": "{{novaVendaId}}"
+        }
+      },
+      "failure_message": "Nova venda deve ser criada"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "sale.exchanged",
+        "payload_contains": {
+          "troca_id": "{{trocaId}}"
+        }
+      },
+      "failure_message": "Evento sale.exchanged deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

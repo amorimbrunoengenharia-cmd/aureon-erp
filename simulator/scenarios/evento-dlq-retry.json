@@ -1,0 +1,95 @@
+{
+  "id": "evento-dlq-retry",
+  "name": "Evento DLQ - Retry bem-sucedido",
+  "description": "Valida retry de evento que falhou e foi para DLQ",
+  "priority": "S",
+  "tags": ["events", "dlq"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "event",
+      "action": "publish test.failing.event",
+      "params": {
+        "payload": {
+          "test_id": "dlq-001",
+          "force_failure": true
+        }
+      },
+      "capture": ["id as eventId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 2000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /api/dlq/stats",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "api",
+      "action": "POST /api/dlq/retry/{{eventId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "dlq_events",
+        "where": {
+          "event_id": "{{eventId}}"
+        }
+      },
+      "failure_message": "Evento deve estar na DLQ"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "dlq.event.retried"
+      },
+      "failure_message": "Evento dlq.event.retried deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": [
+    "event_log",
+    "api_log",
+    "db_snapshot"
+  ]
+}

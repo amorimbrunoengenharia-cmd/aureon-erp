@@ -1,0 +1,97 @@
+{
+  "id": "evento-order-validation",
+  "name": "Validação de ordem de eventos",
+  "description": "Valida que eventos são publicados na ordem correta",
+  "priority": "S",
+  "tags": ["events", "audit"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 1
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 100.00
+          }
+        }
+      },
+      "capture": ["body.id as saleId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "sale.created"
+      },
+      "failure_message": "Evento sale.created deve existir"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "stock.decreased"
+      },
+      "failure_message": "Evento stock.decreased deve existir"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "payment.processed"
+      },
+      "failure_message": "Evento payment.processed deve existir"
+    }
+  ],
+  "artifacts_to_collect": ["event_log"]
+}

@@ -1,0 +1,110 @@
+name: Simulation - Smoke Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  simulate-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: aureon-os/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./aureon-os
+        run: npm ci
+
+      - name: Install backend dependencies
+        working-directory: ./aureon-backend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./aureon-os
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend server
+        working-directory: ./aureon-backend
+        run: |
+          npm run dev &
+          echo $! > backend.pid
+          sleep 5
+        env:
+          NODE_ENV: test
+          DATABASE_URL: sqlite::memory:
+
+      - name: Wait for backend
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:5000/health; do sleep 1; done'
+
+      - name: Run smoke tests
+        working-directory: ./aureon-os
+        run: npm run simulate:smoke
+        env:
+          NODE_ENV: test
+
+      - name: Upload simulation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-reports
+          path: aureon-os/simulator/reports/
+          retention-days: 7
+
+      - name: Stop backend server
+        if: always()
+        working-directory: ./aureon-backend
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+          fi
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = './aureon-os/simulator/reports/';
+            
+            // Find latest JSON report
+            const files = fs.readdirSync(reportPath).filter(f => f.endsWith('.json'));
+            if (files.length === 0) return;
+            
+            const latestReport = files.sort().reverse()[0];
+            const report = JSON.parse(fs.readFileSync(reportPath + latestReport, 'utf-8'));
+            
+            const summary = report.summary;
+            const emoji = summary.failed === 0 ? '✅' : '❌';
+            
+            const comment = `## ${emoji} Simulation Results
+            
+            **Summary:**
+            - Total: ${summary.total}
+            - ✅ Passed: ${summary.passed}
+            - ❌ Failed: ${summary.failed}
+            - ⏭️ Skipped: ${summary.skipped}
+            - ⏱️ Duration: ${(summary.duration / 1000).toFixed(2)}s
+            - 📊 Success Rate: ${summary.success_rate}%
+            
+            ${summary.failed > 0 ? '⚠️ Some scenarios failed. Check artifacts for details.' : '🎉 All scenarios passed!'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

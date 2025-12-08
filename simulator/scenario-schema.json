@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AUREON Simulation Scenario",
+  "type": "object",
+  "required": ["id", "name", "priority", "steps", "assertions"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique scenario identifier (kebab-case)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable scenario name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed scenario description"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["XS", "S", "M", "L"],
+      "description": "XS=critical (smoke), S=high, M=medium, L=low"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for filtering: sales, stock, marketplace, concurrency, etc"
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Random seed for deterministic execution (optional, uses global seed if not set)"
+    },
+    "timeout": {
+      "type": "integer",
+      "description": "Scenario timeout in milliseconds",
+      "default": 60000
+    },
+    "preconditions": {
+      "type": "object",
+      "properties": {
+        "database": {
+          "type": "object",
+          "properties": {
+            "seed_file": {
+              "type": "string",
+              "description": "Path to SQL seed file relative to simulator/seeds/"
+            },
+            "snapshot": {
+              "type": "string",
+              "description": "Path to DB snapshot file"
+            },
+            "cleanup": {
+              "type": "boolean",
+              "default": false,
+              "description": "Clean DB before running scenario"
+            }
+          }
+        },
+        "services": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["backend", "frontend", "mock-payment-gateway", "mock-marketplace"]
+          },
+          "description": "Required services (will validate before running)"
+        },
+        "mocks": {
+          "type": "object",
+          "description": "Mock service configurations"
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type", "action"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["api", "ui", "event", "db", "wait", "parallel", "mock"],
+            "description": "Step type"
+          },
+          "action": {
+            "type": "string",
+            "description": "Action to perform (e.g., 'POST /api/auth/login', 'click button', 'wait 2s')"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional step description for reports"
+          },
+          "params": {
+            "type": "object",
+            "description": "Step parameters (headers, body, selectors, etc)"
+          },
+          "expected": {
+            "type": "object",
+            "description": "Expected response/outcome"
+          },
+          "capture": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Variables to capture (e.g., 'body.accessToken as token', 'body.data.id as productId')"
+          },
+          "continueOnError": {
+            "type": "boolean",
+            "default": false,
+            "description": "Continue execution if this step fails"
+          }
+        }
+      }
+    },
+    "failure_injections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at_step", "type"],
+        "properties": {
+          "at_step": {
+            "type": "integer",
+            "description": "Step index (0-based) to inject failure"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "network_delay",
+              "http_error",
+              "db_error",
+              "timeout",
+              "token_expiry",
+              "process_crash",
+              "partial_response"
+            ],
+            "description": "Failure type to inject"
+          },
+          "params": {
+            "type": "object",
+            "description": "Failure parameters (delay_ms, status_code, error_type)"
+          }
+        }
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type", "condition"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "db_count",
+              "db_value",
+              "db_exists",
+              "event_count",
+              "event_exists",
+              "api_response",
+              "ui_element",
+              "kpi_value",
+              "no_errors_in_log"
+            ],
+            "description": "Assertion type"
+          },
+          "condition": {
+            "type": "object",
+            "description": "Assertion condition (table, where, expected, etc)"
+          },
+          "failure_message": {
+            "type": "string",
+            "description": "Custom failure message (supports {{variable}} interpolation)"
+          }
+        }
+      }
+    },
+    "artifacts_to_collect": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "db_snapshot",
+          "event_log",
+          "api_log",
+          "ui_screenshot",
+          "ui_video",
+          "performance_metrics",
+          "network_trace"
+        ]
+      },
+      "description": "Artifacts to collect during/after execution"
+    }
+  }
+}

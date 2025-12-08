@@ -1,0 +1,165 @@
+{
+  "id": "venda-concorrente-last-item",
+  "name": "Venda concorrente - último item",
+  "description": "Testa race condition quando 2 vendedores tentam vender o último item em estoque simultaneamente. Apenas 1 deve ter sucesso.",
+  "priority": "XS",
+  "tags": ["sales", "critical", "concurrency", "stock"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "low_stock.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token1"]
+    },
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token2"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token1}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token1}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "parallel",
+      "requests": [
+        {
+          "type": "api",
+          "action": "POST /vendas",
+          "params": {
+            "headers": {
+              "Authorization": "Bearer {{token1}}"
+            },
+            "body": {
+              "cliente_id": "{{clientId}}",
+              "items": [
+                {
+                  "produto_id": "{{productId}}",
+                  "quantidade": 1
+                }
+              ],
+              "pagamento": {
+                "metodo": "DINHEIRO",
+                "valor_pago": 100.00
+              }
+            }
+          },
+          "capture": ["body.id as sale1Id", "response.status as sale1Status"]
+        },
+        {
+          "type": "api",
+          "action": "POST /vendas",
+          "params": {
+            "headers": {
+              "Authorization": "Bearer {{token2}}"
+            },
+            "body": {
+              "cliente_id": "{{clientId}}",
+              "items": [
+                {
+                  "produto_id": "{{productId}}",
+                  "quantidade": 1
+                }
+              ],
+              "pagamento": {
+                "metodo": "DINHEIRO",
+                "valor_pago": 100.00
+              }
+            }
+          },
+          "capture": ["body.id as sale2Id", "response.status as sale2Status"]
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "status": "CONCLUIDA"
+        },
+        "operator": "equals",
+        "expected": 1
+      },
+      "failure_message": "Only 1 sale should succeed when selling last item"
+    },
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "status": "CANCELADA"
+        },
+        "operator": "equals",
+        "expected": 1
+      },
+      "failure_message": "1 sale should be cancelled due to insufficient stock"
+    },
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "produtos",
+        "column": "estoque_atual",
+        "where": {
+          "id": "{{productId}}"
+        },
+        "operator": "equals",
+        "expected": 0
+      },
+      "failure_message": "Stock should be 0 after selling last item"
+    },
+    {
+      "type": "no_errors_in_log",
+      "condition": {
+        "since": 5000,
+        "log_level": ["ERROR", "FATAL"]
+      },
+      "failure_message": "No errors should be logged during concurrent sale attempt"
+    }
+  ],
+  "artifacts_to_collect": [
+    "db_snapshot",
+    "event_log",
+    "api_log",
+    "performance_metrics"
+  ]
+}

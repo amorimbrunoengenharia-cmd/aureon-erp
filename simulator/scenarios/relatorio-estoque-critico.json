@@ -1,0 +1,59 @@
+{
+  "id": "relatorio-estoque-critico",
+  "name": "Relatório de estoque crítico",
+  "description": "Gera relatório de produtos com estoque abaixo do mínimo",
+  "priority": "M",
+  "tags": ["report", "medium", "stock"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "low_stock.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "estoque",
+          "password": "estoque123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /relatorios/estoque-critico",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.produtos as produtosCriticos", "body.total as totalCriticos"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "body": "produtos"
+      },
+      "failure_message": "Relatório deve conter lista de produtos críticos"
+    },
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "produtos",
+        "where": {
+          "estoque_atual < estoque_minimo": true
+        },
+        "operator": "greater_than",
+        "expected": 0
+      },
+      "failure_message": "Deve haver produtos com estoque abaixo do mínimo"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "performance_metrics"]
+}

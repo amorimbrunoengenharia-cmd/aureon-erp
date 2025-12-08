@@ -1,0 +1,106 @@
+{
+  "id": "estoque-transferencia",
+  "name": "Transferência entre estoques",
+  "description": "Valida transferência de produtos entre filiais/depósitos",
+  "priority": "S",
+  "tags": ["stock", "inventory"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "estoque",
+          "password": "estoque123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /estoque/transferencias",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "origem": "DEPOSITO_A",
+          "destino": "DEPOSITO_B",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 10
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.status": "PENDENTE"
+      },
+      "capture": ["body.id as transferenciaId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "PUT /estoque/transferencias/{{transferenciaId}}/confirmar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "CONFIRMADA"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "estoque_movimentos",
+        "where": {
+          "produto_id": "{{productId}}",
+          "tipo": "TRANSFERENCIA"
+        },
+        "operator": "equals",
+        "expected": 2
+      },
+      "failure_message": "Devem existir 2 movimentos (saída origem + entrada destino)"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "stock.transfer.confirmed",
+        "payload_contains": {
+          "transferencia_id": "{{transferenciaId}}"
+        }
+      },
+      "failure_message": "Evento stock.transfer.confirmed deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": [
+    "db_snapshot",
+    "event_log"
+  ]
+}

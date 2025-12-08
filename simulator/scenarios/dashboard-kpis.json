@@ -1,0 +1,105 @@
+{
+  "id": "dashboard-kpis",
+  "name": "Dashboard KPIs em tempo real",
+  "description": "Valida cálculo correto de KPIs no dashboard (GMV, margem, ticket médio)",
+  "priority": "M",
+  "tags": ["dashboard", "medium", "kpi"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 5,
+              "preco_unitario": 100.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 500.00
+          }
+        }
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /dashboard/kpis",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.gmv as gmv", "body.ticket_medio as ticketMedio"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "kpi_value",
+      "condition": {
+        "kpi_name": "gmv",
+        "expected": 500,
+        "tolerance": 10
+      },
+      "failure_message": "GMV deve incluir a nova venda"
+    },
+    {
+      "type": "api_response",
+      "condition": {
+        "body": "gmv"
+      },
+      "failure_message": "Dashboard deve retornar KPIs calculados"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "performance_metrics"]
+}

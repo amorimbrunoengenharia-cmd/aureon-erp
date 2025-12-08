@@ -1,0 +1,59 @@
+{
+  "id": "login-invalido",
+  "name": "Login com credenciais inválidas",
+  "description": "Tenta login com credenciais incorretas e valida resposta de erro",
+  "priority": "S",
+  "tags": ["auth", "high", "security"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "senha_errada"
+        }
+      },
+      "expected": {
+        "status": 401
+      }
+    },
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "usuario_inexistente",
+          "password": "qualquer_senha"
+        }
+      },
+      "expected": {
+        "status": 401
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "status": 401
+      },
+      "failure_message": "Login com credenciais inválidas deve retornar 401"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "LOGIN_FAILED"
+        }
+      },
+      "failure_message": "Tentativa de login falho deve ser auditada"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "event_log"]
+}

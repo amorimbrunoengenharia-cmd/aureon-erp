@@ -1,0 +1,59 @@
+{
+  "id": "exportacao-dados",
+  "name": "Exportação de dados para CSV",
+  "description": "Exporta dados de vendas para arquivo CSV",
+  "priority": "L",
+  "tags": ["export", "low", "csv"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /exportacao/vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "formato": "CSV",
+          "data_inicio": "2024-12-01",
+          "data_fim": "2024-12-31"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.arquivo_url as arquivoUrl", "body.total_registros as totalRegistros"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "body": "arquivo_url"
+      },
+      "failure_message": "Exportação deve retornar URL do arquivo"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "export.completed"
+      },
+      "failure_message": "Evento export.completed deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "event_log"]
+}

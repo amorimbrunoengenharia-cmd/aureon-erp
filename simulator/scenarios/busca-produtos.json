@@ -1,0 +1,81 @@
+{
+  "id": "busca-produtos",
+  "name": "Busca de produtos",
+  "description": "Testa busca de produtos por nome, código de barras e categoria",
+  "priority": "M",
+  "tags": ["search", "medium", "products"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/busca",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "q": "Paracetamol"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.data as resultadoNome"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/busca",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "codigo_barras": "7891234567890"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.data as resultadoBarras"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/busca",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "categoria": "MEDICAMENTOS"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "body": "data"
+      },
+      "failure_message": "Busca deve retornar resultados"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "performance_metrics"]
+}

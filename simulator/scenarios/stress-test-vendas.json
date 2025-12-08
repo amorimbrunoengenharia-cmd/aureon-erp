@@ -1,0 +1,102 @@
+{
+  "id": "stress-test-vendas",
+  "name": "Teste de carga - vendas simultâneas",
+  "description": "Simula 50 vendas simultâneas para testar performance",
+  "priority": "L",
+  "tags": ["stress", "low", "performance", "concurrency"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "parallel",
+      "requests": [
+        {
+          "type": "api",
+          "action": "POST /vendas",
+          "params": {
+            "headers": {
+              "Authorization": "Bearer {{token}}"
+            },
+            "body": {
+              "cliente_id": "{{clientId}}",
+              "items": [
+                {
+                  "produto_id": "{{productId}}",
+                  "quantidade": 1,
+                  "preco_unitario": 50.00
+                }
+              ],
+              "pagamento": {
+                "metodo": "DINHEIRO",
+                "valor_pago": 50.00
+              }
+            }
+          }
+        }
+      ],
+      "count": 50
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 2000
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "status": "CONCLUIDA"
+        },
+        "operator": "equals",
+        "expected": 50
+      },
+      "failure_message": "Devem existir 50 vendas concluídas"
+    },
+    {
+      "type": "no_errors_in_log",
+      "condition": {
+        "since": 10000,
+        "log_level": ["ERROR", "FATAL"]
+      },
+      "failure_message": "Não deve haver erros durante teste de carga"
+    }
+  ],
+  "artifacts_to_collect": ["performance_metrics", "db_snapshot", "api_log"]
+}

@@ -1,0 +1,123 @@
+{
+  "id": "prescricao-digital",
+  "name": "Validação de prescrição digital",
+  "description": "Valida prescrição digital com assinatura eletrônica e vínculo à venda",
+  "priority": "M",
+  "tags": ["prescription", "medium", "digital"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /prescricoes/validar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "tipo": "DIGITAL",
+          "hash": "abc123def456",
+          "crm_medico": "12345-SP",
+          "paciente_cpf": "12345678901",
+          "medicamento": "Antibiótico X",
+          "assinatura_digital": "signature_hash_xyz"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.valida": true
+      },
+      "capture": ["body.prescricao_id as prescricaoId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "prescricao_id": "{{prescricaoId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 1,
+              "preco_unitario": 50.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 50.00
+          }
+        }
+      },
+      "capture": ["body.id as saleId"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "prescricoes",
+        "where": {
+          "id": "{{prescricaoId}}",
+          "valida": true
+        }
+      },
+      "failure_message": "Prescrição deve estar validada"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "id": "{{saleId}}",
+          "prescricao_id": "{{prescricaoId}}"
+        }
+      },
+      "failure_message": "Venda deve estar vinculada à prescrição"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "prescription.validated"
+      },
+      "failure_message": "Evento prescription.validated deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

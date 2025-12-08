@@ -1,0 +1,159 @@
+{
+  "id": "venda-cancelamento",
+  "name": "Cancelamento de venda",
+  "description": "Valida cancelamento de venda com estorno de estoque e registro de auditoria",
+  "priority": "S",
+  "tags": ["sales", "stock", "audit"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token", "body.user.id as userId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId", "body.data[0].estoque_atual as stockBefore"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 3,
+              "preco_unitario": 50.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 150.00
+          }
+        }
+      },
+      "capture": ["body.id as saleId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "PUT /vendas/{{saleId}}/cancelar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "motivo": "Cancelado pelo cliente"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "CANCELADA"
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/{{productId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.estoque_atual as stockAfter"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "vendas",
+        "column": "status",
+        "where": {
+          "id": "{{saleId}}"
+        },
+        "operator": "equals",
+        "expected": "CANCELADA"
+      },
+      "failure_message": "Status da venda deve ser CANCELADA"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "sale.cancelled",
+        "payload_contains": {
+          "sale_id": "{{saleId}}"
+        }
+      },
+      "failure_message": "Evento sale.cancelled deve ser publicado"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "CANCEL",
+          "resource_type": "venda",
+          "resource_id": "{{saleId}}"
+        }
+      },
+      "failure_message": "Log de auditoria do cancelamento deve existir"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "estoque_movimentos",
+        "where": {
+          "produto_id": "{{productId}}",
+          "tipo": "ESTORNO_CANCELAMENTO"
+        }
+      },
+      "failure_message": "Movimento de estorno deve ser criado"
+    }
+  ],
+  "artifacts_to_collect": [
+    "db_snapshot",
+    "event_log",
+    "api_log"
+  ]
+}

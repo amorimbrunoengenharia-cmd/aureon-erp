@@ -1,0 +1,84 @@
+{
+  "id": "fornecedor-cadastro",
+  "name": "Cadastro de fornecedor",
+  "description": "Cadastra novo fornecedor com validação de CNPJ",
+  "priority": "M",
+  "tags": ["supplier", "medium", "crud"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /fornecedores",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "razao_social": "Distribuidora ABC Ltda",
+          "cnpj": "12345678000190",
+          "telefone": "11987654321",
+          "email": "contato@distribuidoraabc.com.br",
+          "endereco": {
+            "cep": "01310-100",
+            "logradouro": "Av. Paulista",
+            "numero": "1000",
+            "cidade": "São Paulo",
+            "uf": "SP"
+          }
+        }
+      },
+      "expected": {
+        "status": 201
+      },
+      "capture": ["body.id as fornecedorId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /fornecedores/{{fornecedorId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.cnpj": "12345678000190"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "fornecedores",
+        "where": {
+          "id": "{{fornecedorId}}",
+          "cnpj": "12345678000190"
+        }
+      },
+      "failure_message": "Fornecedor deve ser cadastrado"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "supplier.created"
+      },
+      "failure_message": "Evento supplier.created deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "api_log"]
+}

@@ -1,0 +1,106 @@
+{
+  "id": "venda-desconto",
+  "name": "Venda com desconto",
+  "description": "Valida aplicação de desconto percentual e valor fixo em venda",
+  "priority": "S",
+  "tags": ["sales", "pricing"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 2,
+              "preco_unitario": 100.00
+            }
+          ],
+          "desconto": {
+            "tipo": "PERCENTUAL",
+            "valor": 10
+          },
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 180.00
+          }
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.total": 180.00,
+        "body.desconto_aplicado": 20.00
+      },
+      "capture": ["body.id as saleId"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "vendas",
+        "column": "total",
+        "where": {
+          "id": "{{saleId}}"
+        },
+        "operator": "equals",
+        "expected": 180.00
+      },
+      "failure_message": "Total da venda deve ser 180.00 (200 - 10%)"
+    },
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "vendas",
+        "column": "desconto_aplicado",
+        "where": {
+          "id": "{{saleId}}"
+        },
+        "operator": "equals",
+        "expected": 20.00
+      },
+      "failure_message": "Desconto aplicado deve ser 20.00"
+    }
+  ],
+  "artifacts_to_collect": ["api_log"]
+}

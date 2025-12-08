@@ -1,0 +1,84 @@
+{
+  "id": "backup-automatico",
+  "name": "Backup automático do banco",
+  "description": "Valida processo de backup automático do banco de dados",
+  "priority": "L",
+  "tags": ["backup", "maintenance"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /admin/backup/criar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "tipo": "COMPLETO",
+          "compactar": true
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.id as backupId", "body.arquivo as backupFile"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 2000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /admin/backup/{{backupId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "CONCLUIDO"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "backups",
+        "where": {
+          "id": "{{backupId}}",
+          "status": "CONCLUIDO"
+        }
+      },
+      "failure_message": "Backup deve estar CONCLUIDO"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "backup.completed",
+        "payload_contains": {
+          "backup_id": "{{backupId}}"
+        }
+      },
+      "failure_message": "Evento backup.completed deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["event_log", "api_log"]
+}

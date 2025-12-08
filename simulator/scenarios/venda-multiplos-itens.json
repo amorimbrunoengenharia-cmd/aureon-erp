@@ -1,0 +1,113 @@
+{
+  "id": "venda-multiplos-itens",
+  "name": "Venda com múltiplos itens",
+  "description": "Valida venda com vários produtos e quantidades diferentes",
+  "priority": "S",
+  "tags": ["sales", "stock"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": [
+        "body.data[0].id as product1Id",
+        "body.data[1].id as product2Id",
+        "body.data[2].id as product3Id"
+      ]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{product1Id}}",
+              "quantidade": 2,
+              "preco_unitario": 12.50
+            },
+            {
+              "produto_id": "{{product2Id}}",
+              "quantidade": 1,
+              "preco_unitario": 8.00
+            },
+            {
+              "produto_id": "{{product3Id}}",
+              "quantidade": 3,
+              "preco_unitario": 18.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "CARTAO_CREDITO",
+            "valor_pago": 87.00
+          }
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.total": 87.00
+      },
+      "capture": ["body.id as saleId"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "venda_items",
+        "where": {
+          "venda_id": "{{saleId}}"
+        },
+        "operator": "equals",
+        "expected": 3
+      },
+      "failure_message": "Devem existir 3 itens na venda"
+    },
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "estoque_movimentos",
+        "where": {
+          "tipo": "VENDA"
+        },
+        "operator": "equals",
+        "expected": 3
+      },
+      "failure_message": "Devem existir 3 movimentos de estoque"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "api_log"]
+}

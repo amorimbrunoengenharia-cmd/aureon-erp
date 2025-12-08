@@ -1,0 +1,82 @@
+{
+  "id": "dashboard-vendas-dia",
+  "name": "Dashboard - Vendas do dia",
+  "description": "Valida métricas do dashboard de vendas do dia",
+  "priority": "S",
+  "tags": ["dashboard", "kpi"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /dashboard/vendas/hoje",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": [
+        "body.total_vendas as totalVendas",
+        "body.quantidade_vendas as qtdVendas",
+        "body.ticket_medio as ticketMedio"
+      ]
+    },
+    {
+      "type": "api",
+      "action": "GET /dashboard/produtos/mais-vendidos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /dashboard/estoque/alertas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "status": 200
+      },
+      "failure_message": "Dashboard deve retornar 200"
+    },
+    {
+      "type": "no_errors_in_log",
+      "condition": {
+        "since": 5000
+      },
+      "failure_message": "Não deve haver erros ao buscar métricas"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "performance_metrics"]
+}

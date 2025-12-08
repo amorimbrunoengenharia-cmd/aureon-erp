@@ -1,0 +1,104 @@
+{
+  "id": "usuario-permissoes",
+  "name": "Validação de permissões por role",
+  "description": "Testa que usuários só podem acessar recursos conforme suas permissões",
+  "priority": "S",
+  "tags": ["auth", "high", "permissions"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as tokenVendedor"]
+    },
+    {
+      "type": "api",
+      "action": "GET /usuarios",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{tokenVendedor}}"
+        }
+      },
+      "expected": {
+        "status": 403
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{tokenVendedor}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as tokenCeo"]
+    },
+    {
+      "type": "api",
+      "action": "GET /usuarios",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{tokenCeo}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /relatorios/financeiro",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{tokenCeo}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "status": 200
+      },
+      "failure_message": "CEO deve ter acesso a relatórios financeiros"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "ACCESS_DENIED",
+          "user_id": "{{userId}}"
+        }
+      },
+      "failure_message": "Tentativa de acesso negado deve ser auditada"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "event_log"]
+}

@@ -1,0 +1,92 @@
+{
+  "id": "relatorio-vendas-periodo",
+  "name": "Relatório de vendas por período",
+  "description": "Valida geração de relatório de vendas com filtros de período",
+  "priority": "M",
+  "tags": ["reports", "sales"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /relatorios/vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "data_inicio": "2025-12-01",
+          "data_fim": "2025-12-08",
+          "formato": "json"
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.total as totalPeriodo", "body.quantidade as qtdVendas"]
+    },
+    {
+      "type": "api",
+      "action": "GET /relatorios/vendas/por-vendedor",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "data_inicio": "2025-12-01",
+          "data_fim": "2025-12-08"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /relatorios/vendas/por-produto",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "data_inicio": "2025-12-01",
+          "data_fim": "2025-12-08",
+          "top": 10
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "status": 200
+      },
+      "failure_message": "Todos os endpoints de relatório devem retornar 200"
+    },
+    {
+      "type": "no_errors_in_log",
+      "condition": {
+        "since": 5000
+      },
+      "failure_message": "Não deve haver erros na geração de relatórios"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "performance_metrics"]
+}

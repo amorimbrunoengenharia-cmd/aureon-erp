@@ -1,0 +1,123 @@
+{
+  "id": "marketplace-product-sync",
+  "name": "Sincronização de produto com marketplace",
+  "description": "Testa sincronização de produto com Mercado Livre incluindo criação, atualização e pausa de anúncio",
+  "priority": "XS",
+  "tags": ["marketplace", "critical", "integration"],
+  "preconditions": {
+    "services": ["backend", "marketplace-mock"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /marketplace/sync",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "produto_id": "{{productId}}",
+          "marketplace": "mercadolivre"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.listing_id": "string",
+        "body.status": "active"
+      },
+      "capture": ["body.listing_id as listingId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /marketplace/listings/{{listingId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "active"
+      }
+    },
+    {
+      "type": "api",
+      "action": "PUT /marketplace/listings/{{listingId}}/pause",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "paused"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "marketplace_listings",
+        "where": {
+          "produto_id": "{{productId}}",
+          "marketplace": "mercadolivre"
+        }
+      },
+      "failure_message": "Marketplace listing should be saved in database"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "marketplace.listing.created",
+        "payload_contains": {
+          "listing_id": "{{listingId}}"
+        }
+      },
+      "failure_message": "Event marketplace.listing.created should be published"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "marketplace.listing.paused",
+        "payload_contains": {
+          "listing_id": "{{listingId}}"
+        }
+      },
+      "failure_message": "Event marketplace.listing.paused should be published"
+    }
+  ],
+  "artifacts_to_collect": [
+    "event_log",
+    "api_log",
+    "performance_metrics"
+  ]
+}

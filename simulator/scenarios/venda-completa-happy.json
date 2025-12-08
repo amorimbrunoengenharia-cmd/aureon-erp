@@ -1,0 +1,145 @@
+{
+  "id": "venda-completa-happy",
+  "name": "Venda completa - caminho feliz",
+  "description": "Fluxo completo de venda desde login até finalização, validando estoque, eventos e auditoria",
+  "priority": "XS",
+  "tags": ["sales", "critical", "smoke", "stock", "events"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token", "body.user.id as userId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId", "body.data[0].estoque_atual as initialStock"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 2,
+              "preco_unitario": 50.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 100.00
+          }
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.id": "string",
+        "body.status": "CONCLUIDA"
+      },
+      "capture": ["body.id as saleId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /vendas/{{saleId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "CONCLUIDA"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "id": "{{saleId}}"
+        }
+      },
+      "failure_message": "Sale {{saleId}} should exist in database"
+    },
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "vendas",
+        "column": "status",
+        "where": {
+          "id": "{{saleId}}"
+        },
+        "operator": "equals",
+        "expected": "CONCLUIDA"
+      },
+      "failure_message": "Sale status should be CONCLUIDA"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "sale.created",
+        "payload_contains": {
+          "sale_id": "{{saleId}}"
+        }
+      },
+      "failure_message": "Event sale.created should be published"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "CREATE",
+          "resource_type": "venda",
+          "user_id": "{{userId}}"
+        }
+      },
+      "failure_message": "Audit log should be created"
+    }
+  ],
+  "artifacts_to_collect": [
+    "db_snapshot",
+    "event_log",
+    "api_log",
+    "performance_metrics"
+  ]
+}

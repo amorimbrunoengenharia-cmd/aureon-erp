@@ -1,0 +1,106 @@
+{
+  "id": "notificacao-estoque",
+  "name": "Notificação de estoque baixo",
+  "description": "Envia notificação quando estoque atinge nível crítico",
+  "priority": "M",
+  "tags": ["notification", "medium", "stock"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token", "body.user.id as userId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 92,
+              "preco_unitario": 50.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 4600.00
+          }
+        }
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 2000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /notificacoes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "notificacoes",
+        "where": {
+          "tipo": "ESTOQUE_BAIXO",
+          "produto_id": "{{productId}}"
+        }
+      },
+      "failure_message": "Notificação de estoque baixo deve ser criada"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "notification.sent",
+        "payload_contains": {
+          "tipo": "ESTOQUE_BAIXO"
+        }
+      },
+      "failure_message": "Evento notification.sent deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

@@ -1,0 +1,130 @@
+{
+  "id": "pdv-abertura-fechamento",
+  "name": "PDV - Abertura e fechamento de caixa",
+  "description": "Valida abertura de caixa com fundo de troco e fechamento com conferência",
+  "priority": "S",
+  "tags": ["pdv", "sales"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token", "body.user.id as userId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /pdv/caixas/abrir",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "fundo_troco": 100.00
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.status": "ABERTO"
+      },
+      "capture": ["body.id as caixaId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /pdv/caixas/{{caixaId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "ABERTO",
+        "body.fundo_troco": 100.00
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    },
+    {
+      "type": "api",
+      "action": "PUT /pdv/caixas/{{caixaId}}/fechar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "valor_final": 100.00,
+          "observacoes": "Fechamento normal"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "FECHADO"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "caixas",
+        "column": "status",
+        "where": {
+          "id": "{{caixaId}}"
+        },
+        "operator": "equals",
+        "expected": "FECHADO"
+      },
+      "failure_message": "Status do caixa deve ser FECHADO"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "cash_register.opened",
+        "payload_contains": {
+          "caixa_id": "{{caixaId}}"
+        }
+      },
+      "failure_message": "Evento cash_register.opened deve ser publicado"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "cash_register.closed",
+        "payload_contains": {
+          "caixa_id": "{{caixaId}}"
+        }
+      },
+      "failure_message": "Evento cash_register.closed deve ser publicado"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "CLOSE",
+          "resource_type": "caixa",
+          "user_id": "{{userId}}"
+        }
+      },
+      "failure_message": "Log de auditoria do fechamento deve existir"
+    }
+  ],
+  "artifacts_to_collect": [
+    "event_log",
+    "api_log",
+    "db_snapshot"
+  ]
+}

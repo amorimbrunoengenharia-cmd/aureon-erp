@@ -1,0 +1,137 @@
+{
+  "id": "auditoria-completa",
+  "name": "Auditoria completa de operações",
+  "description": "Valida que todas as operações geram logs de auditoria",
+  "priority": "S",
+  "tags": ["audit", "security"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token", "body.user.id as userId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "nome": "Produto Auditoria",
+          "codigo_barras": "7899999000001",
+          "preco_custo": 5.00,
+          "preco_venda": 10.00,
+          "estoque_atual": 10,
+          "estoque_minimo": 2
+        }
+      },
+      "capture": ["body.id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "PUT /produtos/{{productId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "preco_venda": 12.00
+        }
+      }
+    },
+    {
+      "type": "api",
+      "action": "DELETE /produtos/{{productId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      }
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /audit/logs",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "query": {
+          "user_id": "{{userId}}",
+          "resource_type": "produto"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_count",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "user_id": "{{userId}}",
+          "resource_type": "produto"
+        },
+        "operator": ">=",
+        "expected": 3
+      },
+      "failure_message": "Devem existir ao menos 3 logs (CREATE, UPDATE, DELETE)"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "CREATE",
+          "resource_type": "produto",
+          "resource_id": "{{productId}}"
+        }
+      },
+      "failure_message": "Log de CREATE deve existir"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "UPDATE",
+          "resource_type": "produto",
+          "resource_id": "{{productId}}"
+        }
+      },
+      "failure_message": "Log de UPDATE deve existir"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "DELETE",
+          "resource_type": "produto",
+          "resource_id": "{{productId}}"
+        }
+      },
+      "failure_message": "Log de DELETE deve existir"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "api_log"]
+}

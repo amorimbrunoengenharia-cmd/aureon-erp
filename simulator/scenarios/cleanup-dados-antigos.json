@@ -1,0 +1,72 @@
+{
+  "id": "cleanup-dados-antigos",
+  "name": "Limpeza de dados antigos",
+  "description": "Remove dados antigos mantendo integridade referencial",
+  "priority": "L",
+  "tags": ["cleanup", "low", "maintenance"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /manutencao/cleanup",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "tipo": "LOGS_ANTIGOS",
+          "dias_retencao": 90
+        }
+      },
+      "expected": {
+        "status": 200
+      },
+      "capture": ["body.registros_removidos as registrosRemovidos"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "body": "registros_removidos"
+      },
+      "failure_message": "Deve retornar quantidade de registros removidos"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "cleanup.completed"
+      },
+      "failure_message": "Evento cleanup.completed deve ser publicado"
+    },
+    {
+      "type": "no_errors_in_log",
+      "condition": {
+        "since": 5000,
+        "log_level": ["ERROR", "FATAL"]
+      },
+      "failure_message": "Cleanup não deve gerar erros"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

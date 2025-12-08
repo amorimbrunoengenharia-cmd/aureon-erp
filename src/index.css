@@ -1,0 +1,268 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cinzel:wght@400;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');
+
+/* AUREON Theme Tokens - Importado antes do Tailwind para suportar customização */
+@import './styles/theme-aureon-tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   AUREON Typography & Base Styles
+   ============================================ */
+@layer base {
+  body {
+    @apply font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+  
+  h1 {
+    @apply text-4xl font-bold;
+  }
+  
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+  
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+  
+  /* Melhor legibilidade para parágrafos */
+  p {
+    @apply leading-relaxed;
+  }
+  
+  /* Inputs e selects com melhor tipografia */
+  input, select, textarea {
+    @apply font-sans;
+  }
+  
+  /* Botões com fonte mais elegante */
+  button {
+    @apply font-medium tracking-wide;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 20px var(--aureon-focus);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 30px var(--aureon-focus);
+  }
+}
+
+/* ============================================
+   AUREON Utilities - Focus States & Spacing
+   ============================================ */
+@layer utilities {
+  /* Focus states consistentes */
+  .focus-aureon {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aureon-gold focus-visible:ring-offset-2 focus-visible:ring-offset-aureon-bg;
+  }
+  
+  /* Spacing tokens */
+  .spacing-xs { padding: 0.5rem; }
+  .spacing-sm { padding: 0.75rem; }
+  .spacing-md { padding: 1rem; }
+  .spacing-lg { padding: 1.5rem; }
+  .spacing-xl { padding: 2rem; }
+  
+  /* Card padrão AUREON */
+  .card-aureon {
+    @apply bg-aureon-surface border border-aureon-border rounded-lg p-6 shadow-aureon;
+  }
+  
+  /* Botão primário AUREON */
+  .btn-aureon-primary {
+    @apply bg-gradient-to-r from-aureon-gold to-aureon-gold-strong text-aureon-gold-contrast px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all focus-aureon;
+  }
+  
+  /* Input AUREON */
+  .input-aureon {
+    @apply bg-aureon-bg border border-aureon-border rounded-lg px-4 py-2 text-aureon-text placeholder-aureon-muted focus-aureon transition-colors;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* ✅ Body usa tokens CSS que se adaptam automaticamente ao tema */
+body { 
+  background: var(--aureon-bg);
+  color: var(--aureon-text); 
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html, body {
+  scroll-behavior: smooth;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in-left 0.6s ease-out;
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.border-gradient {
+  border-image: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.1)) 1;
+}
+
+.input-dark { 
+  background: linear-gradient(135deg, #0A0A0C 0%, #050505 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white; 
+  padding: 10px; 
+  width: 100%; 
+  border-radius: 8px; 
+  outline: none; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.9rem; 
+}
+
+.input-dark:focus { 
+  border-color: #D4AF37;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+  background: linear-gradient(135deg, #0F0F12 0%, #0A0A0C 100%);
+}
+
+.custom-scroll::-webkit-scrollbar { 
+  width: 8px; 
+  height: 8px; 
+}
+
+.custom-scroll::-webkit-scrollbar-thumb { 
+  background: linear-gradient(to bottom, #D4AF37, #666);
+  border-radius: 4px; 
+  border: 2px solid #0A0A0C;
+}
+
+.custom-scroll::-webkit-scrollbar-track { 
+  background: rgba(10, 10, 12, 0.5);
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #E5C158, #888);
+}
+
+.checkbox-wrapper input:checked + div { 
+  background: linear-gradient(135deg, #D4AF37, #E5C158);
+  border-color: #D4AF37;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+/* Smooth transitions para todos os botões */
+button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(10, 10, 12, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #D4AF37, #E5C158);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(212, 175, 55, 0.15);
+}

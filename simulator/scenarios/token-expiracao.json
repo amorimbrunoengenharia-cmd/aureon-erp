@@ -1,0 +1,59 @@
+{
+  "id": "token-expiracao",
+  "name": "Expiração de token JWT",
+  "description": "Valida que token expirado não permite acesso",
+  "priority": "S",
+  "tags": ["auth", "high", "security", "jwt"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "failure_injections": [
+    {
+      "at_step": 2,
+      "type": "token_expiry",
+      "params": {}
+    }
+  ],
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer token_expirado_simulado"
+        }
+      },
+      "expected": {
+        "status": 401
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "api_response",
+      "condition": {
+        "status": 401
+      },
+      "failure_message": "Token expirado deve retornar 401"
+    }
+  ],
+  "artifacts_to_collect": ["api_log"]
+}

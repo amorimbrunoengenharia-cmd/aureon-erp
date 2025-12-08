@@ -1,0 +1,94 @@
+{
+  "id": "produto-criar",
+  "name": "Criar novo produto",
+  "description": "Valida criação de produto com código de barras único",
+  "priority": "S",
+  "tags": ["products", "inventory"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "estoque",
+          "password": "estoque123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "nome": "Produto Teste Simulação",
+          "codigo_barras": "7899999999999",
+          "preco_custo": 10.00,
+          "preco_venda": 25.00,
+          "estoque_atual": 0,
+          "estoque_minimo": 5,
+          "categoria": "MEDICAMENTOS"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.codigo_barras": "7899999999999"
+      },
+      "capture": ["body.id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/{{productId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.nome": "Produto Teste Simulação"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "produtos",
+        "where": {
+          "id": "{{productId}}",
+          "codigo_barras": "7899999999999"
+        }
+      },
+      "failure_message": "Produto deve existir no banco"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "product.created",
+        "payload_contains": {
+          "product_id": "{{productId}}"
+        }
+      },
+      "failure_message": "Evento product.created deve ser publicado"
+    },
+    {
+      "type": "kpi_value",
+      "condition": {
+        "kpi_name": "margin",
+        "product_id": "{{productId}}",
+        "expected": 60,
+        "tolerance": 1
+      },
+      "failure_message": "Margem deve ser 60% ((25-10)/25)"
+    }
+  ],
+  "artifacts_to_collect": ["api_log", "event_log"]
+}

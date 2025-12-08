@@ -1,0 +1,139 @@
+{
+  "id": "prescricao-venda-controlado",
+  "name": "Venda de medicamento controlado com prescrição",
+  "description": "Valida venda de medicamento controlado com validação de prescrição médica",
+  "priority": "M",
+  "tags": ["prescriptions", "sales", "compliance"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "POST /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "nome": "Ritalina 10mg",
+          "codigo_barras": "7891234000111",
+          "preco_custo": 50.00,
+          "preco_venda": 120.00,
+          "estoque_atual": 20,
+          "estoque_minimo": 5,
+          "controlado": true,
+          "tipo_receita": "B1"
+        }
+      },
+      "capture": ["body.id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /prescricoes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "medico_crm": "123456",
+          "medico_nome": "Dr. João Silva",
+          "data_emissao": "2025-12-08",
+          "produtos": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 1
+            }
+          ]
+        }
+      },
+      "capture": ["body.id as prescricaoId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "prescricao_id": "{{prescricaoId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 1,
+              "preco_unitario": 120.00
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 120.00
+          }
+        }
+      },
+      "expected": {
+        "status": 201
+      },
+      "capture": ["body.id as saleId"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "prescricoes",
+        "where": {
+          "id": "{{prescricaoId}}",
+          "status": "UTILIZADA"
+        }
+      },
+      "failure_message": "Prescrição deve estar marcada como UTILIZADA"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "vendas",
+        "where": {
+          "id": "{{saleId}}",
+          "prescricao_id": "{{prescricaoId}}"
+        }
+      },
+      "failure_message": "Venda deve estar vinculada à prescrição"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "prescription.used",
+        "payload_contains": {
+          "prescricao_id": "{{prescricaoId}}"
+        }
+      },
+      "failure_message": "Evento prescription.used deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}

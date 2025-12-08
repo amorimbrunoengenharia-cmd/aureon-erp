@@ -1,0 +1,125 @@
+{
+  "id": "estoque-alerta-minimo",
+  "name": "Alerta de estoque mínimo",
+  "description": "Valida geração de alerta quando estoque atinge nível mínimo",
+  "priority": "S",
+  "tags": ["stock", "alerts"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "low_stock.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "vendedor",
+          "password": "vendedor123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /clientes",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as clientId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /vendas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "cliente_id": "{{clientId}}",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 1
+            }
+          ],
+          "pagamento": {
+            "metodo": "DINHEIRO",
+            "valor_pago": 120.00
+          }
+        }
+      },
+      "capture": ["body.id as saleId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 1000
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /estoque/alertas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "expected": {
+        "status": 200
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "produtos",
+        "column": "estoque_atual",
+        "where": {
+          "id": "{{productId}}"
+        },
+        "operator": "equals",
+        "expected": 0
+      },
+      "failure_message": "Estoque deve estar em 0"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "stock.low_alert",
+        "payload_contains": {
+          "produto_id": "{{productId}}"
+        }
+      },
+      "failure_message": "Evento stock.low_alert deve ser publicado"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "estoque_alertas",
+        "where": {
+          "produto_id": "{{productId}}",
+          "tipo": "ESTOQUE_MINIMO"
+        }
+      },
+      "failure_message": "Alerta de estoque mínimo deve ser criado"
+    }
+  ],
+  "artifacts_to_collect": [
+    "event_log",
+    "db_snapshot"
+  ]
+}

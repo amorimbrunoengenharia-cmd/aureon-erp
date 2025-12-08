@@ -1,0 +1,114 @@
+{
+  "id": "estoque-entrada",
+  "name": "Entrada de estoque",
+  "description": "Valida entrada de produtos no estoque com nota fiscal",
+  "priority": "S",
+  "tags": ["stock", "inventory"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "estoque",
+          "password": "estoque123"
+        }
+      },
+      "capture": ["body.accessToken as token", "body.user.id as userId"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId", "body.data[0].estoque_atual as stockBefore"]
+    },
+    {
+      "type": "api",
+      "action": "POST /estoque/entradas",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "nota_fiscal": "NF-12345",
+          "fornecedor": "Fornecedor Teste Ltda",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 50,
+              "valor_unitario": 10.00
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status": 201
+      },
+      "capture": ["body.id as entradaId"]
+    },
+    {
+      "type": "wait",
+      "params": {
+        "ms": 500
+      }
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos/{{productId}}",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.estoque_atual as stockAfter"]
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "estoque_movimentos",
+        "where": {
+          "produto_id": "{{productId}}",
+          "tipo": "ENTRADA"
+        }
+      },
+      "failure_message": "Movimento de entrada deve ser criado"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "stock.entry.created",
+        "payload_contains": {
+          "entrada_id": "{{entradaId}}"
+        }
+      },
+      "failure_message": "Evento stock.entry.created deve ser publicado"
+    },
+    {
+      "type": "db_exists",
+      "condition": {
+        "table": "audit_logs",
+        "where": {
+          "action": "CREATE",
+          "resource_type": "entrada_estoque",
+          "user_id": "{{userId}}"
+        }
+      },
+      "failure_message": "Log de auditoria deve ser criado"
+    }
+  ],
+  "artifacts_to_collect": [
+    "db_snapshot",
+    "event_log",
+    "api_log"
+  ]
+}

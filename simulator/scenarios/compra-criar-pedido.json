@@ -1,0 +1,110 @@
+{
+  "id": "compra-criar-pedido",
+  "name": "Criar pedido de compra",
+  "description": "Valida criação de pedido de compra com aprovação",
+  "priority": "M",
+  "tags": ["purchases", "inventory"],
+  "preconditions": {
+    "services": ["backend"],
+    "db_seed": "base.sql"
+  },
+  "steps": [
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "estoque",
+          "password": "estoque123"
+        }
+      },
+      "capture": ["body.accessToken as token"]
+    },
+    {
+      "type": "api",
+      "action": "GET /produtos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        }
+      },
+      "capture": ["body.data[0].id as productId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /compras/pedidos",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{token}}"
+        },
+        "body": {
+          "fornecedor": "Distribuidora ABC Ltda",
+          "items": [
+            {
+              "produto_id": "{{productId}}",
+              "quantidade": 100,
+              "valor_unitario": 8.00
+            }
+          ],
+          "prazo_entrega": 7,
+          "observacoes": "Pedido urgente"
+        }
+      },
+      "expected": {
+        "status": 201,
+        "body.status": "PENDENTE"
+      },
+      "capture": ["body.id as pedidoId"]
+    },
+    {
+      "type": "api",
+      "action": "POST /auth/login",
+      "params": {
+        "body": {
+          "username": "ceo",
+          "password": "ceo123"
+        }
+      },
+      "capture": ["body.accessToken as tokenCeo"]
+    },
+    {
+      "type": "api",
+      "action": "PUT /compras/pedidos/{{pedidoId}}/aprovar",
+      "params": {
+        "headers": {
+          "Authorization": "Bearer {{tokenCeo}}"
+        }
+      },
+      "expected": {
+        "status": 200,
+        "body.status": "APROVADO"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "type": "db_value",
+      "condition": {
+        "table": "pedidos_compra",
+        "column": "status",
+        "where": {
+          "id": "{{pedidoId}}"
+        },
+        "operator": "equals",
+        "expected": "APROVADO"
+      },
+      "failure_message": "Pedido deve estar APROVADO"
+    },
+    {
+      "type": "event_exists",
+      "condition": {
+        "event_type": "purchase_order.approved",
+        "payload_contains": {
+          "pedido_id": "{{pedidoId}}"
+        }
+      },
+      "failure_message": "Evento purchase_order.approved deve ser publicado"
+    }
+  ],
+  "artifacts_to_collect": ["db_snapshot", "event_log", "api_log"]
+}
