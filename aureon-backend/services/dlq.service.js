@@ -5,7 +5,7 @@
 
 import { Event } from '../models/index.js';
 import { Op } from 'sequelize';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 class DLQService {
   constructor() {

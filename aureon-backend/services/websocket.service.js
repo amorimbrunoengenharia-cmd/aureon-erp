@@ -5,7 +5,7 @@
 
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 class WebSocketService {
   constructor() {

@@ -4,8 +4,7 @@
 
 import express from 'express';
 import wsService from '../services/websocket.service.js';
-import { authenticate } from '../middlewares/auth.js';
-import { authorize } from '../middlewares/authorize.js';
+import { authenticate, authorize } from '../middlewares/auth.js';
 
 const router = express.Router();
 

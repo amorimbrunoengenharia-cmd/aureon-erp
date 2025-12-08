@@ -5,8 +5,7 @@
 
 import express from 'express';
 import dlqService from '../services/dlq.service.js';
-import { authenticate } from '../middlewares/auth.js';
-import { authorize } from '../middlewares/authorize.js';
+import { authenticate, authorize } from '../middlewares/auth.js';
 
 const router = express.Router();
 
