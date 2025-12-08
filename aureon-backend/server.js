@@ -44,6 +44,8 @@ import supplierQuotationRoutes from './routes/supplierQuotation.routes.js';
 import dlqRoutes from './routes/dlq.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import websocketRoutes from './routes/websocket.routes.js';
+import userRoutes from './routes/user.routes.js';
+import bugReportRoutes from './routes/bugReport.routes.js';
 
 dotenv.config();
 
@@ -348,6 +350,8 @@ app.use('/api/customer', customerRoutes);
 app.use('/api/dlq', dlqRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/ws', websocketRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/it/bug-reports', bugReportRoutes);
 
 // ===== ERROR HANDLERS =====
 // Sentry error handler must be BEFORE other error handlers

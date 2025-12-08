@@ -13,6 +13,7 @@ import AuditLog from './AuditLog.js';
 import SavedSearch from './SavedSearch.js';
 import MarketplaceIntegration from './MarketplaceIntegration.js';
 import SupplierQuotation from './SupplierQuotation.js';
+import BugReport from './BugReport.js';
 
 // ===== RELACIONAMENTOS =====
 
