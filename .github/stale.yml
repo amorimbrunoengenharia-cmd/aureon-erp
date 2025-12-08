@@ -1,0 +1,91 @@
+# Configuration for probot-stale - https://github.com/probot/stale
+
+# Number of days of inactivity before an Issue or Pull Request becomes stale
+daysUntilStale: 60
+
+# Number of days of inactivity before a stale Issue or Pull Request is closed
+daysUntilClose: 7
+
+# Issues or Pull Requests with these labels will never be considered stale
+exemptLabels:
+  - "pinned"
+  - "security"
+  - "priority: high"
+  - "priority: critical"
+  - "good first issue"
+  - "help wanted"
+  - "roadmap"
+
+# Set to true to ignore issues in a project (defaults to false)
+exemptProjects: false
+
+# Set to true to ignore issues in a milestone (defaults to false)
+exemptMilestones: false
+
+# Set to true to ignore issues with an assignee (defaults to false)
+exemptAssignees: false
+
+# Label to use when marking as stale
+staleLabel: "stale"
+
+# Comment to post when marking as stale. Set to `false` to disable
+markComment: >
+  Esta issue/PR está inativa há 60 dias e será marcada como `stale`. 
+  
+  Se ainda for relevante, por favor:
+  - 💬 Comente para manter aberta
+  - 🔄 Atualize com novas informações
+  - 🏷️ Adicione label `pinned` para nunca fechar
+  
+  Caso contrário, será fechada automaticamente em 7 dias.
+  
+  Obrigado pela contribuição! 🙏
+
+# Comment to post when removing the stale label
+# unmarkComment: >
+#   Your comment here.
+
+# Comment to post when closing a stale Issue or Pull Request
+closeComment: >
+  Esta issue/PR foi fechada automaticamente devido à inatividade (60+ dias).
+  
+  Se precisar reabrir:
+  - 🔄 Comente nesta thread
+  - 📝 Crie uma nova issue com contexto atualizado
+  - 💬 Mencione @amorimbrunoengenharia-cmd
+  
+  Obrigado! 🙏
+
+# Limit the number of actions per hour, from 1-30. Default is 30
+limitPerRun: 30
+
+# Limit to only `issues` or `pulls`
+# only: issues
+
+# Optionally, specify configuration settings that are specific to just 'issues' or 'pulls':
+pulls:
+  daysUntilStale: 45
+  daysUntilClose: 7
+  markComment: >
+    Este Pull Request está inativo há 45 dias e será marcado como `stale`.
+    
+    Se ainda deseja que seja merged:
+    - 🔄 Atualize com a branch main
+    - ✅ Resolva conflitos
+    - 💬 Responda aos comentários de review
+    - 🏷️ Adicione label `pinned` para nunca fechar
+    
+    Caso contrário, será fechado em 7 dias.
+    
+    Obrigado pela contribuição! 🙏
+
+issues:
+  daysUntilStale: 60
+  daysUntilClose: 7
+  exemptLabels:
+    - "bug"
+    - "enhancement"
+    - "pinned"
+    - "security"
+    - "priority: high"
+    - "priority: critical"

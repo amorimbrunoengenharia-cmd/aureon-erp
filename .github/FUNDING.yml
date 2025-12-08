@@ -1,0 +1,34 @@
+# GitHub Sponsors Configuration
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# Uncomment and configure your preferred sponsorship platforms
+
+# GitHub Sponsors
+# github: [amorimbrunoengenharia-cmd]
+
+# Open Collective
+# open_collective: aureon-erp
+
+# Ko-fi
+# ko_fi: aureon
+
+# Patreon
+# patreon: aureon
+
+# Community Bridge
+# community_bridge: aureon-erp
+
+# Liberapay
+# liberapay: aureon
+
+# IssueHunt
+# issuehunt: amorimbrunoengenharia-cmd
+
+# Custom URLs (up to 4)
+# custom: ['https://www.paypal.me/aureon', 'https://buymeacoffee.com/aureon']
+
+# Bitcoin
+# bitcoin: bc1qxxx
+
+# Note: To enable the Sponsor button, uncomment and configure at least one platform above
+# After pushing this file, the "Sponsor" button will appear on your repository

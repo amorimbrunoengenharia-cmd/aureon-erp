@@ -1,0 +1,66 @@
+# Prettier ignore file
+# Files and directories to exclude from formatting
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.min.js
+*.min.css
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# Simulation reports
+simulator/reports/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation (preserve formatting)
+CHANGELOG.md
+ARCHITECTURE.md
+
+# Generated files
+*.generated.*
+
+# Lock files
+*.lock
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache

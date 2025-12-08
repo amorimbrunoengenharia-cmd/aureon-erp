@@ -1,0 +1,124 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separateMajorReleases"
+  ],
+  "timezone": "America/Sao_Paulo",
+  "schedule": [
+    "after 9am and before 5pm every weekday"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "assignees": [
+    "@amorimbrunoengenharia-cmd"
+  ],
+  "reviewers": [
+    "@amorimbrunoengenharia-cmd"
+  ],
+  "packageRules": [
+    {
+      "description": "Group React ecosystem updates",
+      "groupName": "React ecosystem",
+      "matchPackagePatterns": [
+        "^react",
+        "^@types/react"
+      ]
+    },
+    {
+      "description": "Group Vite ecosystem updates",
+      "groupName": "Vite ecosystem",
+      "matchPackagePatterns": [
+        "^vite",
+        "^@vitejs/"
+      ]
+    },
+    {
+      "description": "Group testing libraries",
+      "groupName": "Testing libraries",
+      "matchPackagePatterns": [
+        "^vitest",
+        "^@testing-library/",
+        "^playwright"
+      ]
+    },
+    {
+      "description": "Group linting tools",
+      "groupName": "Linting tools",
+      "matchPackagePatterns": [
+        "^eslint",
+        "^@eslint/",
+        "^prettier"
+      ]
+    },
+    {
+      "description": "Automerge minor and patch updates",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Limit concurrent PRs",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "prCreation": "not-pending"
+    },
+    {
+      "description": "Pin GitHub Actions to commit SHA",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "pinDigests": true
+    },
+    {
+      "description": "Disable major updates for React",
+      "matchPackageNames": [
+        "react",
+        "react-dom"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": [
+      "security"
+    ],
+    "assignees": [
+      "@amorimbrunoengenharia-cmd"
+    ]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 5am on monday"
+    ]
+  },
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "commitMessagePrefix": "chore(deps):",
+  "rangeStrategy": "bump",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "ignoreDeps": [],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/__tests__/**",
+    "**/test/**",
+    "**/tests/**"
+  ]
+}
