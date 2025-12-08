@@ -106,7 +106,8 @@ const models = {
   AuditLog,
   SavedSearch,
   MarketplaceIntegration,
-  SupplierQuotation
+  SupplierQuotation,
+  BugReport
 };
 
 export default models;
@@ -125,5 +126,6 @@ export {
   AuditLog,
   SavedSearch,
   MarketplaceIntegration,
-  SupplierQuotation
+  SupplierQuotation,
+  BugReport
 };
