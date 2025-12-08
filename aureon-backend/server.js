@@ -1,3 +1,6 @@
+// IMPORTANT: Import Sentry instrument at the very top
+import './instrument.mjs';
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
