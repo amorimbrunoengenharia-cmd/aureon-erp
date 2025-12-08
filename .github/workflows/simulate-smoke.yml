@@ -28,6 +28,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Create reports directory
+        run: mkdir -p simulator/reports
+
       - name: Run smoke tests
         run: npm run simulate:smoke
         env:
@@ -49,9 +52,18 @@ jobs:
             const fs = require('fs');
             const reportPath = './simulator/reports/';
             
+            // Check if reports directory exists
+            if (!fs.existsSync(reportPath)) {
+              console.log('No reports directory found');
+              return;
+            }
+            
             // Find latest JSON report
             const files = fs.readdirSync(reportPath).filter(f => f.endsWith('.json'));
-            if (files.length === 0) return;
+            if (files.length === 0) {
+              console.log('No JSON reports found');
+              return;
+            }
             
             const latestReport = files.sort().reverse()[0];
             const report = JSON.parse(fs.readFileSync(reportPath + latestReport, 'utf-8'));
