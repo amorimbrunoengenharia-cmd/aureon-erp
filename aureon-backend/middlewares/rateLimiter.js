@@ -1,23 +1,28 @@
 import rateLimit from 'express-rate-limit';
 
+// Mais permissivo em desenvolvimento
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 export const rateLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  max: isDevelopment ? 1000 : (parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100), // 1000 em dev
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  skip: (req) => isDevelopment && req.ip === '::1' // Skip localhost em dev
 });
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 login attempts
+  max: isDevelopment ? 100 : 5, // 100 tentativas em dev, 5 em prod
   message: {
     error: 'Too many login attempts, please try again after 15 minutes'
   },
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  skip: (req) => isDevelopment && req.ip === '::1' // Skip localhost em dev
 });
 
 /**
