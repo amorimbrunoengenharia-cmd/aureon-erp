@@ -108,6 +108,7 @@ router.post(
 
       const sale = await Sale.create({
         ...req.body,
+        tenant_id: req.user.tenant_id, // Auto-populate from authenticated user
         vendedor_id: req.user.id,
         vendedor: req.user.username
       });

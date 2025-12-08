@@ -97,6 +97,7 @@ router.post(
 
       const product = await Product.create({
         ...req.body,
+        tenant_id: req.user.tenant_id, // Auto-populate from authenticated user
         metadata: {
           ...req.body.metadata,
           created_by: req.user.username

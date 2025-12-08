@@ -11,6 +11,9 @@ import logger from './utils/logger.js';
 import { validateEnv, printEnvSummary } from './utils/validateEnv.js';
 import { retry } from './utils/dbRetry.js';
 import healthCheckService from './utils/healthCheck.js';
+import dlqService from './services/dlq.service.js';
+import wsService from './services/websocket.service.js';
+import cacheService from './services/cache.service.js';
 import { rateLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import traceMiddleware from './middlewares/trace.js';
@@ -38,6 +41,9 @@ import financialRoutes from './routes/financialRoutes.js';
 import marketplaceRoutes from './routes/marketplace.routes.js';
 import customerRoutes from './routes/customer.routes.js';
 import supplierQuotationRoutes from './routes/supplierQuotation.routes.js';
+import dlqRoutes from './routes/dlq.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
+import websocketRoutes from './routes/websocket.routes.js';
 
 dotenv.config();
 
@@ -239,6 +245,85 @@ app.get('/health/detailed', async (req, res) => {
   }
 });
 
+// Metrics endpoint - Prometheus format
+app.get('/metrics', async (req, res) => {
+  try {
+    const memUsage = process.memoryUsage();
+    const cpuUsage = process.cpuUsage();
+    const uptime = process.uptime();
+    
+    // Get DLQ stats
+    let dlqStats = { total: 0, byStatus: {}, eligibleForRetry: 0 };
+    try {
+      dlqStats = await dlqService.getStats();
+    } catch (error) {
+      logger.warn('Failed to get DLQ stats for metrics:', error.message);
+    }
+
+    // Prometheus text format
+    const metrics = [
+      '# HELP nodejs_process_uptime_seconds Process uptime in seconds',
+      '# TYPE nodejs_process_uptime_seconds gauge',
+      `nodejs_process_uptime_seconds ${uptime}`,
+      '',
+      '# HELP nodejs_heap_size_used_bytes Process heap size used',
+      '# TYPE nodejs_heap_size_used_bytes gauge',
+      `nodejs_heap_size_used_bytes ${memUsage.heapUsed}`,
+      '',
+      '# HELP nodejs_heap_size_total_bytes Process heap size total',
+      '# TYPE nodejs_heap_size_total_bytes gauge',
+      `nodejs_heap_size_total_bytes ${memUsage.heapTotal}`,
+      '',
+      '# HELP nodejs_external_memory_bytes External memory',
+      '# TYPE nodejs_external_memory_bytes gauge',
+      `nodejs_external_memory_bytes ${memUsage.external}`,
+      '',
+      '# HELP nodejs_cpu_user_seconds_total User CPU time spent',
+      '# TYPE nodejs_cpu_user_seconds_total counter',
+      `nodejs_cpu_user_seconds_total ${cpuUsage.user / 1000000}`,
+      '',
+      '# HELP nodejs_cpu_system_seconds_total System CPU time spent',
+      '# TYPE nodejs_cpu_system_seconds_total counter',
+      `nodejs_cpu_system_seconds_total ${cpuUsage.system / 1000000}`,
+      '',
+      '# HELP aureon_events_total Total events in system',
+      '# TYPE aureon_events_total gauge',
+      `aureon_events_total ${dlqStats.total}`,
+      '',
+      '# HELP aureon_events_pending Events waiting to be processed',
+      '# TYPE aureon_events_pending gauge',
+      `aureon_events_pending ${dlqStats.byStatus.pending || 0}`,
+      '',
+      '# HELP aureon_events_processing Events currently being processed',
+      '# TYPE aureon_events_processing gauge',
+      `aureon_events_processing ${dlqStats.byStatus.processing || 0}`,
+      '',
+      '# HELP aureon_events_dlq Events in dead letter queue',
+      '# TYPE aureon_events_dlq gauge',
+      `aureon_events_dlq ${dlqStats.byStatus.dlq || 0}`,
+      '',
+      '# HELP aureon_events_failed Permanently failed events',
+      '# TYPE aureon_events_failed gauge',
+      `aureon_events_failed ${dlqStats.byStatus.failed || 0}`,
+      '',
+      '# HELP aureon_events_completed Successfully completed events',
+      '# TYPE aureon_events_completed gauge',
+      `aureon_events_completed ${dlqStats.byStatus.completed || 0}`,
+      '',
+      '# HELP aureon_dlq_eligible_for_retry DLQ events ready for retry',
+      '# TYPE aureon_dlq_eligible_for_retry gauge',
+      `aureon_dlq_eligible_for_retry ${dlqStats.eligibleForRetry}`,
+      ''
+    ].join('\n');
+
+    res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.send(metrics);
+  } catch (error) {
+    logger.error('Metrics endpoint error:', error);
+    res.status(500).send('# Error generating metrics\n');
+  }
+});
+
 // ===== API ROUTES =====
 app.use('/api/auth', authRoutes);
 app.use('/api/tenants', tenantRoutes);
@@ -260,6 +345,9 @@ app.use('/api/search', searchRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/customer', customerRoutes);
+app.use('/api/dlq', dlqRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/ws', websocketRoutes);
 
 // ===== ERROR HANDLERS =====
 // Sentry error handler must be BEFORE other error handlers
@@ -278,6 +366,9 @@ const startServer = async () => {
     await retry(() => sequelize.authenticate(), { retries: 5, backoff: 1000 });
     logger.info('✅ Database connection established successfully (with retry)');
 
+    // Initialize cache service (Redis ou memory fallback)
+    await cacheService.initialize();
+
     // Sync models (development only - use migrations in production)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: false });
@@ -291,6 +382,12 @@ const startServer = async () => {
       logger.info(`🚀 AUREON Backend running on port ${PORT}`);
       logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
       logger.info(`🔗 CORS enabled for: ${process.env.CORS_ORIGIN}`);
+      
+      // Initialize WebSocket
+      wsService.initialize(server);
+      
+      // Start DLQ retry service
+      dlqService.start();
       
       // Signal PM2 that app is ready
       if (process.send) {

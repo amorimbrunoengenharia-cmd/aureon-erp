@@ -94,7 +94,10 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const client = await Client.create(req.body);
+      const client = await Client.create({
+        ...req.body,
+        tenant_id: req.user.tenant_id // Auto-populate from authenticated user
+      });
 
       logger.info(`Client created: ${client.id} by ${req.user.username}`);
 
