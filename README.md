@@ -6,6 +6,14 @@
 ![React](https://img.shields.io/badge/React-18.2-61DAFB?logo=react)
 ![Vite](https://img.shields.io/badge/Vite-5.1-646CFF?logo=vite)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![CI/CD](https://github.com/amorimbrunoengenharia-cmd/aureon-erp/actions/workflows/ci-cd.yml/badge.svg)
+![Simulation Tests](https://github.com/amorimbrunoengenharia-cmd/aureon-erp/actions/workflows/simulate-smoke.yml/badge.svg)
+
+![GitHub Stars](https://img.shields.io/github/stars/amorimbrunoengenharia-cmd/aureon-erp?style=social)
+![GitHub Forks](https://img.shields.io/github/forks/amorimbrunoengenharia-cmd/aureon-erp?style=social)
+![GitHub Issues](https://img.shields.io/github/issues/amorimbrunoengenharia-cmd/aureon-erp)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/amorimbrunoengenharia-cmd/aureon-erp)
+![GitHub Contributors](https://img.shields.io/github/contributors/amorimbrunoengenharia-cmd/aureon-erp)
 
 **ERP moderno para farmácias com PDV, controle de estoque, prescrições digitais, integração com marketplace e sistema de simulação completo**
 
@@ -96,6 +104,28 @@ npm run dev
 | **Vendedor** | vendedor | vend123 |
 | **Estoque** | estoque | est123 |
 | **Compras** | compras | comp123 |
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+### Dashboard Principal
+*Visão geral com KPIs em tempo real, gráficos de vendas e alertas*
+
+### PDV (Ponto de Venda)
+*Interface intuitiva para vendas rápidas com busca de produtos e múltiplas formas de pagamento*
+
+### Gestão de Estoque
+*Controle completo de produtos com alertas de estoque mínimo e integração com marketplaces*
+
+### Sistema de Simulação
+*46 cenários de teste automatizados com relatórios detalhados*
+
+> 📝 **Nota**: Screenshots serão adicionados em breve. Sistema já está 100% funcional!
+
+</div>
 
 ---
 
