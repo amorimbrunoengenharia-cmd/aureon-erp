@@ -60,7 +60,7 @@
     "eslint-plugin-react": "^7.34.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "express": "^4.21.2",
+    "express": "^5.2.1",
     "jest-axe": "^10.0.0",
     "jsdom": "^27.2.0",
     "playwright": "^1.57.0",
