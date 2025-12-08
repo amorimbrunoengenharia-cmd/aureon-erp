@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentação
+    url: https://github.com/amorimbrunoengenharia-cmd/aureon-erp/blob/main/README.md
+    about: Consulte a documentação completa do projeto
+  - name: 💬 Discussões
+    url: https://github.com/amorimbrunoengenharia-cmd/aureon-erp/discussions
+    about: Faça perguntas e participe de discussões gerais
+  - name: 🚀 Quick Start
+    url: https://github.com/amorimbrunoengenharia-cmd/aureon-erp/blob/main/QUICKSTART.md
+    about: Guia rápido de instalação em 5 minutos

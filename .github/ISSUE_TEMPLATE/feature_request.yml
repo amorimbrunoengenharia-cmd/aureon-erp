@@ -1,0 +1,135 @@
+name: ✨ Solicitação de Feature
+description: Sugira uma nova funcionalidade para o AUREON ERP
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por sugerir uma nova funcionalidade! Por favor, preencha o formulário abaixo para nos ajudar a entender sua proposta.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema ou Necessidade
+      description: Qual problema esta feature resolve? Ou qual necessidade atende?
+      placeholder: Atualmente não é possível...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solução Proposta
+      description: Descreva como você imagina que esta feature funcionaria
+      placeholder: O sistema deveria permitir...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Módulo Relacionado
+      description: Qual módulo seria afetado por esta feature?
+      options:
+        - Dashboard
+        - Estoque
+        - Vendas
+        - CRM
+        - Comunicação
+        - Análises
+        - Metas
+        - Compras
+        - Configurações
+        - Simulador
+        - Novo Módulo
+        - Sistema Geral
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridade
+      description: Qual a importância desta feature para você?
+      options:
+        - 🔴 Alta (Fundamental para meu uso)
+        - 🟡 Média (Melhoraria significativamente)
+        - 🟢 Baixa (Nice to have)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas Consideradas
+      description: Você considerou outras soluções? Como você resolve isso hoje?
+      placeholder: Atualmente eu...
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Exemplos ou Mockups
+      description: Tem exemplos de outros sistemas ou mockups da interface?
+      placeholder: Cole links, imagens ou descrições
+    validations:
+      required: false
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Casos de Uso
+      description: Descreva cenários práticos de como esta feature seria usada
+      placeholder: |
+        1. Como vendedor, eu gostaria de...
+        2. Como gerente, eu preciso...
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical
+    attributes:
+      label: Considerações Técnicas
+      description: Se você tem conhecimento técnico, descreva aspectos de implementação
+      placeholder: Esta feature poderia usar a API do...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: willingness
+    attributes:
+      label: Disponibilidade para Contribuir
+      description: Você gostaria de ajudar a implementar esta feature?
+      options:
+        - 🙋 Sim, posso implementar
+        - 🤝 Sim, posso ajudar com testes
+        - 📝 Sim, posso ajudar com documentação
+        - 👀 Não, apenas sugerindo
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Contexto Adicional
+      description: Qualquer outra informação relevante sobre esta feature
+      placeholder: Esta feature seria útil porque...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Por favor, confirme os itens abaixo
+      options:
+        - label: Pesquisei nas issues existentes e não encontrei features similares
+          required: true
+        - label: Li o [guia de contribuição](../../CONTRIBUTING.md)
+          required: true
+        - label: Esta feature está alinhada com o escopo do AUREON ERP
+          required: true
