@@ -1,0 +1,57 @@
+# CODEOWNERS - Auto-assign reviewers for pull requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @amorimbrunoengenharia-cmd
+
+# Documentation
+*.md @amorimbrunoengenharia-cmd
+/docs/ @amorimbrunoengenharia-cmd
+
+# Configuration files
+*.json @amorimbrunoengenharia-cmd
+*.yml @amorimbrunoengenharia-cmd
+*.yaml @amorimbrunoengenharia-cmd
+.github/ @amorimbrunoengenharia-cmd
+
+# Source code
+/src/ @amorimbrunoengenharia-cmd
+
+# Components
+/src/components/ @amorimbrunoengenharia-cmd
+
+# Pages/Modules
+/src/pages/ @amorimbrunoengenharia-cmd
+
+# Context/State Management
+/src/context/ @amorimbrunoengenharia-cmd
+
+# Tests
+/tests/ @amorimbrunoengenharia-cmd
+*.test.js @amorimbrunoengenharia-cmd
+*.spec.js @amorimbrunoengenharia-cmd
+
+# Simulator
+/simulator/ @amorimbrunoengenharia-cmd
+
+# Scripts
+/scripts/ @amorimbrunoengenharia-cmd
+
+# Build configuration
+vite.config.js @amorimbrunoengenharia-cmd
+tailwind.config.js @amorimbrunoengenharia-cmd
+vitest.config.js @amorimbrunoengenharia-cmd
+
+# Docker
+Dockerfile @amorimbrunoengenharia-cmd
+docker-compose.yml @amorimbrunoengenharia-cmd
+
+# CI/CD
+/.github/workflows/ @amorimbrunoengenharia-cmd
+
+# Security
+SECURITY.md @amorimbrunoengenharia-cmd
+
+# Dependencies
+package.json @amorimbrunoengenharia-cmd
+package-lock.json @amorimbrunoengenharia-cmd

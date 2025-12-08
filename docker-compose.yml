@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # Frontend Development Server
+  frontend:
+    container_name: aureon-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:5000/api
+      - VITE_BACKEND_URL=http://localhost:5000
+      - VITE_ENABLE_SIMULATION_MODE=true
+    command: npm run dev
+    networks:
+      - aureon-network
+    restart: unless-stopped
+
+  # Backend API (Future)
+  # backend:
+  #   container_name: aureon-backend
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - DATABASE_URL=postgresql://aureon:aureon123@postgres:5432/aureon_db
+  #     - REDIS_URL=redis://redis:6379
+  #     - JWT_SECRET=dev_secret_key_change_in_production
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   volumes:
+  #     - ./backend:/app
+  #     - /app/node_modules
+  #   networks:
+  #     - aureon-network
+  #   restart: unless-stopped
+
+  # PostgreSQL Database (Future)
+  # postgres:
+  #   container_name: aureon-postgres
+  #   image: postgres:16-alpine
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     - POSTGRES_USER=aureon
+  #     - POSTGRES_PASSWORD=aureon123
+  #     - POSTGRES_DB=aureon_db
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #     - aureon-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U aureon"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Redis Cache (Future)
+  # redis:
+  #   container_name: aureon-redis
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - aureon-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Nginx Reverse Proxy (Production)
+  # nginx:
+  #   container_name: aureon-nginx
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./dist:/usr/share/nginx/html:ro
+  #     - ./certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     - frontend
+  #     - backend
+  #   networks:
+  #     - aureon-network
+  #   restart: unless-stopped
+
+networks:
+  aureon-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

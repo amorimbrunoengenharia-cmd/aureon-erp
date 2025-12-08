@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "pre-commit": "lint-staged",
+    "pre-push": "npm run validate",
+    "commit-msg": "node scripts/validate-commit-msg.js"
+  }
+}
