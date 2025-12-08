@@ -52,6 +52,11 @@ Event.init(
       type: DataTypes.DATE,
       allowNull: true,
       comment: 'When event was sent to Dead Letter Queue'
+    },
+    next_retry_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When to retry this DLQ event'
     }
   },
   {
@@ -65,6 +70,7 @@ Event.init(
       { fields: ['created_at'] },
       { fields: ['processed_at'] },
       { fields: ['dlq_at'] },
+      { fields: ['next_retry_at'] },
       { 
         fields: ['trace_id', 'event_type'],
         name: 'events_trace_type_idx'
