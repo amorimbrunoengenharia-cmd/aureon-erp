@@ -1,0 +1,115 @@
+{
+  "id": "prescription-parse-extract",
+  "name": "Prescrição: OCR e Auto-preenchimento",
+  "description": "Upload de receita, extração via OCR e validação de confidence",
+  "priority": "S",
+  "tags": ["prescription", "ocr", "ai", "high"],
+  "timeout": 60000,
+  "preconditions": {
+    "database": {
+      "tables": ["prescriptions", "prescription_attachments", "events"],
+      "seedRequired": true
+    },
+    "services": {
+      "api": true,
+      "ocr": true
+    },
+    "files": {
+      "testImage": "simulator/fixtures/sample-prescription.jpg"
+    }
+  },
+  "steps": [
+    {
+      "id": "upload-and-parse",
+      "type": "api",
+      "method": "POST",
+      "url": "/api/prescriptions/parse-attachment",
+      "contentType": "multipart/form-data",
+      "file": {
+        "field": "file",
+        "path": "simulator/fixtures/sample-prescription.jpg"
+      },
+      "assertions": [
+        { "path": "status", "operator": "equals", "expected": 200 },
+        { "path": "data.trace_id", "operator": "exists" },
+        { "path": "data.confidence", "operator": "greaterThan", "expected": 0.0 },
+        { "path": "data.confidence", "operator": "lessThanOrEqual", "expected": 1.0 },
+        { "path": "data.parsed", "operator": "exists" },
+        { "path": "data.parsed.od", "operator": "exists" },
+        { "path": "data.parsed.oe", "operator": "exists" }
+      ],
+      "captureVariables": {
+        "trace_id": "data.trace_id",
+        "parsed_data": "data.parsed",
+        "confidence": "data.confidence"
+      }
+    },
+    {
+      "id": "verify-ocr-event",
+      "type": "api",
+      "method": "GET",
+      "url": "/api/events?trace_id={{trace_id}}",
+      "assertions": [
+        { "path": "status", "operator": "equals", "expected": 200 },
+        { "path": "data.length", "operator": "greaterThan", "expected": 0 },
+        { "path": "data[0].event_type", "operator": "equals", "expected": "prescription.attachment.parsed" },
+        { "path": "data[0].trace_id", "operator": "equals", "expected": "{{trace_id}}" }
+      ]
+    },
+    {
+      "id": "validate-confidence-threshold",
+      "type": "custom",
+      "script": "confidence > 0.5",
+      "onFailure": {
+        "action": "warn",
+        "message": "OCR confidence below recommended threshold (50%)"
+      }
+    },
+    {
+      "id": "create-prescription-from-ocr",
+      "type": "api",
+      "method": "POST",
+      "url": "/api/prescriptions",
+      "payload": {
+        "cliente_id": "{{test_client_id}}",
+        "cliente_nome": "{{parsed_data.cliente_nome}}",
+        "od": "{{parsed_data.od}}",
+        "oe": "{{parsed_data.oe}}",
+        "medico_nome": "{{parsed_data.medico_nome}}",
+        "medico_crm": "{{parsed_data.medico_crm}}",
+        "medico_uf": "{{parsed_data.medico_uf}}",
+        "tipo_lente": "{{parsed_data.tipo_lente}}",
+        "data_emissao": "{{parsed_data.data_emissao}}",
+        "observacoes": "Criado via OCR - Confidence: {{confidence}}",
+        "lgpd_consentimento": true,
+        "metadata": {
+          "ocr_confidence": "{{confidence}}",
+          "source": "ocr",
+          "trace_id": "{{trace_id}}"
+        }
+      },
+      "assertions": [
+        { "path": "status", "operator": "equals", "expected": 201 },
+        { "path": "data.id", "operator": "exists" },
+        { "path": "data.metadata.ocr_confidence", "operator": "equals", "expected": "{{confidence}}" }
+      ],
+      "captureVariables": {
+        "prescription_id": "data.id"
+      }
+    }
+  ],
+  "failureInjections": [
+    {
+      "step": "upload-and-parse",
+      "condition": "random(0.1)",
+      "type": "timeout",
+      "duration": 65000
+    }
+  ],
+  "expectedOutcome": {
+    "prescriptionsCreated": 1,
+    "attachmentsParsed": 1,
+    "eventsCreated": 2,
+    "minConfidence": 0.5
+  }
+}

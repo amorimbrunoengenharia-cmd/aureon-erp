@@ -1,0 +1,81 @@
+# Sample Prescription Fixture (Text Representation)
+# This file represents a sample prescription image for OCR testing
+# In production, replace with actual JPEG/PNG image file
+
+RECEITUÁRIO MÉDICO
+═════════════════════════════════════════
+
+DADOS DO PACIENTE
+Nome: João Silva Santos
+CPF: 234.567.890-12
+Data de Nascimento: 22/07/1990
+
+DADOS DO MÉDICO
+Dr. Roberto Fernandes
+CRM: 67890/RJ
+Especialidade: Oftalmologia
+
+DATA DE EMISSÃO: 10/03/2024
+DATA DE VALIDADE: 10/03/2025
+
+═════════════════════════════════════════
+PRESCRIÇÃO OFTALMOLÓGICA
+═════════════════════════════════════════
+
+OLHO DIREITO (OD):
+  Esférico: -1.50 D
+  Cilíndrico: -1.00 D
+  Eixo: 180°
+  DNP: 33 mm
+  Adição: +2.00 D
+
+OLHO ESQUERDO (OE):
+  Esférico: -1.75 D
+  Cilíndrico: -1.25 D
+  Eixo: 175°
+  DNP: 33 mm
+  Adição: +2.00 D
+
+TIPO DE LENTE: Bifocal
+
+OBSERVAÇÕES:
+Presbiopia - primeira vez com lentes bifocais.
+Paciente apresenta dificuldade para leitura de perto.
+Recomenda-se adaptação gradual.
+
+═════════════════════════════════════════
+ASSINATURA E CARIMBO
+Dr. Roberto Fernandes
+CRM 67890/RJ
+
+[STAMP IMAGE PLACEHOLDER]
+═════════════════════════════════════════
+
+NOTA: Este é um arquivo de texto simulado.
+Para testes de OCR reais, substitua por:
+- simulator/fixtures/sample-prescription.jpg
+- simulator/fixtures/sample-prescription.png
+- simulator/fixtures/sample-prescription.pdf
+
+Você pode gerar imagens de prescrição usando:
+1. Ferramentas de design (Canva, Figma)
+2. Digitalização de receitas reais (com dados anonimizados)
+3. Geração via código (HTML -> PDF -> Image)
+
+OCR esperado deve extrair:
+- cliente_nome: "João Silva Santos"
+- medico_nome: "Dr. Roberto Fernandes"
+- medico_crm: "67890"
+- medico_uf: "RJ"
+- data_emissao: "2024-03-10"
+- od.esferico: -1.5
+- od.cilindrico: -1.0
+- od.eixo: 180
+- od.dnp: 33
+- od.adicao: 2.0
+- oe.esferico: -1.75
+- oe.cilindrico: -1.25
+- oe.eixo: 175
+- oe.dnp: 33
+- oe.adicao: 2.0
+- tipo_lente: "Bifocal"
