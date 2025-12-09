@@ -57,6 +57,18 @@ export const config = {
       enabled: true,
       defaultDelay: 1000,
       failureRate: 0.0
+    },
+    shipping: {
+      port: 5003,
+      enabled: true,
+      defaultDelay: 800,
+      failureRate: 0.0
+    },
+    oauth: {
+      port: 5004,
+      enabled: true,
+      defaultDelay: 300,
+      failureRate: 0.0
     }
   },
 

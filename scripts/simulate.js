@@ -28,7 +28,7 @@ import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import config from '../simulator/config.js';
 import ScenarioRunner from '../simulator/scenario-runner.js';
-import ReportGenerator from '../simulator/report-generator.js';
+import { ReportGenerator } from '../simulator/report-generator.js';
 import { startMockServices, stopMockServices } from '../simulator/mocks/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
