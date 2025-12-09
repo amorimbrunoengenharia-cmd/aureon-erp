@@ -2,6 +2,7 @@ import React, { useState, useMemo, useContext } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { DataContext } from '../context/DataContext';
 import { Plus, Search, Filter, Download, DollarSign, AlertCircle, Check, Edit2, Trash2, TrendingDown, Calendar } from 'lucide-react';
+import { generateUniqueId } from '../utils/idGenerator';
 
 /**
  * Gerenciador de Contas a Receber
@@ -167,6 +168,7 @@ export default function ReceivablesManager() {
       dataVencimento.setDate(parseInt(formData.diaVencimento));
       
       parcelas.push({
+        id: generateUniqueId(),
         numero: i + 1,
         valor: valorParcela,
         dataVencimento: dataVencimento.toISOString().split('T')[0],
@@ -475,7 +477,7 @@ export default function ReceivablesManager() {
                     </thead>
                     <tbody className="divide-y divide-[#8B5CF6]/10">
                       {(conta.parcelas && Array.isArray(conta.parcelas) ? conta.parcelas : []).map((parcela, index) => (
-                        <tr key={index} className="hover:bg-aureon-purple/5 transition-colors">
+                        <tr key={parcela.id || `parcela-${conta.id}-${index}`} className="hover:bg-aureon-purple/5 transition-colors">
                           <td className="px-3 py-2 text-sm text-aureon-text">{parcela.numero}/{totalParcelas}</td>
                           <td className="px-3 py-2 text-sm text-aureon-text">{formatDate(parcela.dataVencimento)}</td>
                           <td className="px-3 py-2 text-sm text-right font-semibold text-aureon-text">

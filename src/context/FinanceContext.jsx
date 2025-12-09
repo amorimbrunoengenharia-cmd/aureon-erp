@@ -4,6 +4,7 @@ import { useSimulation } from './SimulationContext';
 import eventBus from '../services/EventBus';
 import { EVENTS, createFinanceReceivablePayload, createFinanceExpensePayload, createEventMetadata, propagateTraceId } from '../services/EventTypes';
 import eventLogger from '../services/EventLogger';
+import { generateUniqueId } from '../utils/idGenerator';
 
 export const FinanceContext = createContext();
 
@@ -74,6 +75,7 @@ export const FinanceProvider = ({ children }) => {
         valorRecebido: total, // Já está pago
         valorPendente: 0,
         parcelas: [{
+          id: generateUniqueId(),
           numero: 1,
           valor: total,
           dataVencimento: new Date().toISOString().split('T')[0],
@@ -257,7 +259,7 @@ export const FinanceProvider = ({ children }) => {
   
   const addDespesa = (despesa, trace_id = null) => {
     const novaDespesa = {
-      id: Date.now() + Math.floor(Math.random() * 1000000),
+      id: generateUniqueId(),
       categoria: despesa.categoria || 'Outros',
       descricao: despesa.descricao || '',
       valor: Number(despesa.valor) || 0,
@@ -376,7 +378,7 @@ export const FinanceProvider = ({ children }) => {
   
   const addContaReceber = (conta, trace_id = null) => {
     const novaConta = {
-      id: Date.now() + Math.floor(Math.random() * 1000000),
+      id: generateUniqueId(),
       vendaId: conta.vendaId,
       clienteId: conta.clienteId,
       clienteNome: conta.clienteNome,
@@ -509,7 +511,7 @@ export const FinanceProvider = ({ children }) => {
   
   const addContaBancaria = (conta) => {
     const novaConta = {
-      id: Date.now() + Math.floor(Math.random() * 1000000),
+      id: generateUniqueId(),
       banco: conta.banco,
       codigoBanco: conta.codigoBanco || '',
       agencia: conta.agencia,
@@ -549,7 +551,7 @@ export const FinanceProvider = ({ children }) => {
   
   const addLancamentoBancario = (lancamento) => {
     const novoLancamento = {
-      id: Date.now() + Math.floor(Math.random() * 1000000),
+      id: generateUniqueId(),
       contaBancariaId: lancamento.contaBancariaId,
       tipo: lancamento.tipo, // entrada | saida
       valor: Number(lancamento.valor) || 0,
@@ -575,7 +577,7 @@ export const FinanceProvider = ({ children }) => {
   
   const addImposto = (imposto) => {
     const novoImposto = {
-      id: Date.now() + Math.floor(Math.random() * 1000000),
+      id: generateUniqueId(),
       mes: imposto.mes,
       regime: imposto.regime || 'Simples Nacional',
       faixa: imposto.faixa || 1,
