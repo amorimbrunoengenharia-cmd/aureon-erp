@@ -111,6 +111,16 @@ Prescription.init(
         model: 'users',
         key: 'id'
       }
+    },
+    trace_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      comment: 'For correlating with events and operations'
+    },
+    metadata: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+      comment: 'Additional metadata for AI/ML: {confidence, source, ai_recommendations}'
     }
   },
   {
@@ -121,6 +131,7 @@ Prescription.init(
       { fields: ['cliente_id'] },
       { fields: ['status'] },
       { fields: ['data_validade'] },
+      { fields: ['trace_id'] },
       { fields: ['created_at'] }
     ]
   }

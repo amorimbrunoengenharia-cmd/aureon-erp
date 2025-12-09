@@ -6,6 +6,10 @@ import Client from './Client.js';
 import Supplier from './Supplier.js';
 import Sale from './Sale.js';
 import Prescription from './Prescription.js';
+import PrescriptionAttachment from './PrescriptionAttachment.js';
+import PatientHistory from './PatientHistory.js';
+import PrescriptionVersion from './PrescriptionVersion.js';
+import SimulatorRun from './SimulatorRun.js';
 import StockMovement from './StockMovement.js';
 import FinanceTransaction from './FinanceTransaction.js';
 import Event from './Event.js';
@@ -63,6 +67,25 @@ Prescription.belongsTo(Client, { foreignKey: 'cliente_id', as: 'client' });
 Prescription.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 Prescription.belongsTo(User, { foreignKey: 'updated_by', as: 'updater' });
 Prescription.hasMany(Sale, { foreignKey: 'prescription_id', as: 'sales' });
+Prescription.hasMany(PrescriptionAttachment, { foreignKey: 'prescription_id', as: 'attachments' });
+Prescription.hasMany(PrescriptionVersion, { foreignKey: 'prescription_id', as: 'versions' });
+
+// PrescriptionAttachment relationships
+PrescriptionAttachment.belongsTo(Prescription, { foreignKey: 'prescription_id', as: 'prescription' });
+PrescriptionAttachment.belongsTo(User, { foreignKey: 'uploaded_by', as: 'uploader' });
+
+// PatientHistory relationships
+PatientHistory.belongsTo(Client, { foreignKey: 'patient_id', as: 'patient' });
+PatientHistory.belongsTo(User, { foreignKey: 'actor_id', as: 'actor' });
+Client.hasMany(PatientHistory, { foreignKey: 'patient_id', as: 'history' });
+
+// PrescriptionVersion relationships
+PrescriptionVersion.belongsTo(Prescription, { foreignKey: 'prescription_id', as: 'prescription' });
+PrescriptionVersion.belongsTo(User, { foreignKey: 'changed_by', as: 'changer' });
+
+// SimulatorRun relationships
+SimulatorRun.belongsTo(User, { foreignKey: 'executed_by', as: 'executor' });
+User.hasMany(SimulatorRun, { foreignKey: 'executed_by', as: 'simulator_runs' });
 
 // StockMovement relationships
 StockMovement.belongsTo(Product, { foreignKey: 'produto_id', as: 'product' });
@@ -109,6 +132,10 @@ const models = {
   Supplier,
   Sale,
   Prescription,
+  PrescriptionAttachment,
+  PatientHistory,
+  PrescriptionVersion,
+  SimulatorRun,
   StockMovement,
   FinanceTransaction,
   Event,
@@ -129,6 +156,10 @@ export {
   Supplier,
   Sale,
   Prescription,
+  PrescriptionAttachment,
+  PatientHistory,
+  PrescriptionVersion,
+  SimulatorRun,
   StockMovement,
   FinanceTransaction,
   Event,

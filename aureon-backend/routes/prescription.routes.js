@@ -1,11 +1,30 @@
 import express from 'express';
+import multer from 'multer';
 import { authenticate } from '../middlewares/auth.js';
-import { Prescription, Client, User } from '../models/index.js';
+import { Prescription, PrescriptionAttachment, PatientHistory, PrescriptionVersion, Client, User } from '../models/index.js';
 import { body, validationResult } from 'express-validator';
 import logger from '../utils/logger.js';
 import { Op } from 'sequelize';
+import prescriptionService from '../services/prescriptionService.js';
+import ocrService from '../services/ocrService.js';
 
 const router = express.Router();
+
+// Multer configuration for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (ocrService.isSupported(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Unsupported file format. Please upload PDF or image files.'));
+    }
+  }
+});
 
 /**
  * GET /api/prescriptions
@@ -217,6 +236,115 @@ router.get('/check-expired', authenticate, async (req, res, next) => {
     res.json({
       success: true,
       message: `${expiredPrescriptions.length} prescriptions marked as expired`
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/prescriptions/parse-attachment
+ * Parse prescription attachment using OCR (AI auto-fill)
+ */
+router.post('/parse-attachment', authenticate, upload.single('file'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const result = await prescriptionService.parseAttachment(req.file, req.user.id);
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    logger.error('Error parsing attachment', { error: error.message });
+    next(error);
+  }
+});
+
+/**
+ * GET /api/prescriptions/:id/versions
+ * Get prescription version history
+ */
+router.get('/:id/versions', authenticate, async (req, res, next) => {
+  try {
+    const versions = await prescriptionService.getVersions(req.params.id);
+
+    res.json({
+      success: true,
+      data: versions
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/prescriptions/:id/attachments
+ * Get prescription attachments
+ */
+router.get('/:id/attachments', authenticate, async (req, res, next) => {
+  try {
+    const attachments = await PrescriptionAttachment.findAll({
+      where: { prescription_id: req.params.id },
+      include: [
+        { model: User, as: 'uploader', attributes: ['id', 'username'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: attachments
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/patients/:patientId/history
+ * Get patient clinical history
+ */
+router.get('/patients/:patientId/history', authenticate, async (req, res, next) => {
+  try {
+    const { page = 1, limit = 50, event_type } = req.query;
+    const offset = (page - 1) * limit;
+
+    const result = await prescriptionService.getPatientHistory(req.params.patientId, {
+      limit: parseInt(limit),
+      offset,
+      event_type
+    });
+
+    res.json({
+      success: true,
+      data: result.history,
+      pagination: {
+        total: result.count,
+        page: parseInt(page),
+        pages: Math.ceil(result.count / limit),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/patients/:patientId/progression-check
+ * Check for rapid progression and clinical alerts
+ */
+router.get('/patients/:patientId/progression-check', authenticate, async (req, res, next) => {
+  try {
+    const result = await prescriptionService.checkRapidProgression(req.params.patientId);
+
+    res.json({
+      success: true,
+      data: result || { flagged: false }
     });
   } catch (error) {
     next(error);
