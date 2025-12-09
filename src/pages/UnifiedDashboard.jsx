@@ -158,12 +158,12 @@ export default function UnifiedDashboard() {
   const receitaMesAtual = vendasMesAtual.reduce((acc, v) => acc + (v.valorVenda || 0), 0);
   const receitaMesPassado = vendasMesPassado.reduce((acc, v) => acc + (v.valorVenda || 0), 0);
   const lucroMesAtual = vendasMesAtual.reduce((acc, v) => acc + (v.lucro || 0), 0);
-  const crescimentoMoM = receitaMesPassado > 0 ? (((receitaMesAtual - receitaMesPassado) / receitaMesPassado) * 100).toFixed(1) : 0;
+  const crescimentoMoM = receitaMesPassado > 0 ? (((receitaMesAtual - receitaMesPassado) / receitaMesPassado) * 100) : 0;
 
   const totalVendas = vendas.reduce((acc, v) => acc + (v.valorVenda || 0), 0);
   const totalLucro = vendas.reduce((acc, v) => acc + (v.lucro || 0), 0);
   const totalEstoque = produtos.reduce((acc, p) => acc + (p.estoque || 0), 0);
-  const margemMedia = totalVendas > 0 ? ((totalLucro / totalVendas) * 100).toFixed(1) : 0;
+  const margemMedia = totalVendas > 0 ? ((totalLucro / totalVendas) * 100) : 0;
   const ticketMedio = vendas.length > 0 ? (totalVendas / vendas.length) : 0;
 
   // Análise de clientes ativos/inativos - USANDO RFM COMPLETO
@@ -190,7 +190,7 @@ export default function UnifiedDashboard() {
 
   // Meta consolidada
   const metaTotal = Object.values(metasPorCanal || {}).reduce((acc, meta) => acc + (meta || 0), 0) || 50000;
-  const atingimentoMeta = metaTotal > 0 ? ((receitaMesAtual / metaTotal) * 100).toFixed(1) : 0;
+  const atingimentoMeta = metaTotal > 0 ? ((receitaMesAtual / metaTotal) * 100) : 0;
 
   // Vendas por mês (últimos 6 meses)
   const vendasPorMes = useMemo(() => {
@@ -244,8 +244,8 @@ export default function UnifiedDashboard() {
   const metricasOperacionais = useMemo(() => {
     // ✅ FIX: Usar precoCusto em vez de preco
     const valorEstoque = BusinessLogic.calcularValorTotalEstoque(produtos);
-    const giroEstoque = valorEstoque > 0 ? (totalVendas / valorEstoque).toFixed(2) : 0;
-    const taxaConversao = clientes.length > 0 ? ((vendas.length / clientes.length) * 100).toFixed(1) : 0;
+    const giroEstoque = valorEstoque > 0 ? (totalVendas / valorEstoque) : 0;
+    const taxaConversao = clientes.length > 0 ? ((vendas.length / clientes.length) * 100) : 0;
     const produtosMaisVendidos = produtos
       .map(p => ({
         nome: p.produto,
@@ -322,7 +322,7 @@ export default function UnifiedDashboard() {
       problemas.push({
         tipo: 'meta',
         severidade: atingimentoMeta < 70 ? 'alta' : 'media',
-        titulo: `Meta ${atingimentoMeta}% atingida`,
+        titulo: `Meta ${atingimentoMeta.toFixed(1)}% atingida`,
         descricao: `Faltam R$ ${deficit.toFixed(2)} para atingir a meta mensal`,
         acao: 'Intensificar vendas nos canais mais rentáveis'
       });
@@ -333,7 +333,7 @@ export default function UnifiedDashboard() {
       problemas.push({
         tipo: 'queda',
         severidade: 'alta',
-        titulo: `Queda de ${Math.abs(crescimentoMoM)}% nas vendas`,
+        titulo: `Queda de ${Math.abs(crescimentoMoM).toFixed(1)}% nas vendas`,
         descricao: 'Receita menor que o mês anterior',
         acao: 'Revisar estratégia de precificação e campanhas'
       });
@@ -365,7 +365,7 @@ export default function UnifiedDashboard() {
       problemas.push({
         tipo: 'margem',
         severidade: 'alta',
-        titulo: `Margem de apenas ${margemMedia}%`,
+        titulo: `Margem de apenas ${margemMedia.toFixed(1)}%`,
         descricao: 'Margem abaixo do recomendado (mín. 20%)',
         acao: 'Revisar custos de fornecedores e precificação'
       });
@@ -455,7 +455,7 @@ export default function UnifiedDashboard() {
   }, [devolucoes, vendas, produtos, fornecedores]);
 
   // Devoluções gerais
-  const taxaDevolucaoGeral = vendas.length > 0 ? ((devolucoes.length / vendas.length) * 100).toFixed(1) : 0;
+  const taxaDevolucaoGeral = vendas.length > 0 ? ((devolucoes.length / vendas.length) * 100) : 0;
 
   // Cores para gráficos
   const COLORS = [
@@ -530,7 +530,7 @@ export default function UnifiedDashboard() {
                 <ArrowDown size={16} className="text-red-400" />
               )}
               <span className={(ceoMetrics.sales.growth || crescimentoMoM) >= 0 ? 'text-green-400' : 'text-red-400'}>
-                {Math.abs(ceoMetrics.sales.growth || crescimentoMoM)}% vs mês anterior
+                {Math.abs(ceoMetrics.sales.growth || crescimentoMoM).toFixed(1)}% vs mês anterior
               </span>
             </div>
           </div>
@@ -544,7 +544,7 @@ export default function UnifiedDashboard() {
               <Target size={24} className={atingimentoMeta >= 100 ? 'text-green-400' : atingimentoMeta >= 70 ? 'text-yellow-400' : 'text-red-400'} />
             </div>
             <div className={`text-3xl font-bold mb-1 ${atingimentoMeta >= 100 ? 'text-green-400' : atingimentoMeta >= 70 ? 'text-yellow-400' : 'text-red-400'}`}>
-              {atingimentoMeta}%
+              {atingimentoMeta.toFixed(1)}%
             </div>
             <div className="text-xs text-aureon-text/70">
               Meta: R$ {metaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -581,16 +581,16 @@ export default function UnifiedDashboard() {
 
           {/* Taxa de Devolução */}
           <div className={`bg-gradient-to-br ${
-            parseFloat(taxaDevolucaoGeral) > 5
+            taxaDevolucaoGeral > 5
               ? 'from-red-400/10 border-red-400/40'
-              : parseFloat(taxaDevolucaoGeral) > 2
+              : taxaDevolucaoGeral > 2
               ? 'from-orange-400/10 border-orange-400/40'
               : 'from-green-400/10 border-green-400/40'
           } to-aureon-surface border rounded-xl p-6 shadow-xl hover:shadow-2xl transition-all hover:scale-105`}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs uppercase tracking-wider text-aureon-text font-semibold">Taxa de Devolução</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={
-                parseFloat(taxaDevolucaoGeral) > 5 ? 'text-red-400' : parseFloat(taxaDevolucaoGeral) > 2 ? 'text-orange-400' : 'text-green-400'
+                taxaDevolucaoGeral > 5 ? 'text-red-400' : taxaDevolucaoGeral > 2 ? 'text-orange-400' : 'text-green-400'
               }>
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
                 <path d="M21 3v5h-5"/>
@@ -599,9 +599,9 @@ export default function UnifiedDashboard() {
               </svg>
             </div>
             <div className={`text-3xl font-bold mb-1 ${
-              parseFloat(taxaDevolucaoGeral) > 5 ? 'text-red-400' : parseFloat(taxaDevolucaoGeral) > 2 ? 'text-orange-400' : 'text-green-400'
+              taxaDevolucaoGeral > 5 ? 'text-red-400' : taxaDevolucaoGeral > 2 ? 'text-orange-400' : 'text-green-400'
             }`}>
-              {taxaDevolucaoGeral}%
+              {taxaDevolucaoGeral.toFixed(1)}%
             </div>
             <div className="text-xs text-aureon-text/70">
               {devolucoes.length} de {vendas.length} vendas
@@ -1230,11 +1230,11 @@ export default function UnifiedDashboard() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-aureon-bg rounded border border-aureon-gold/10">
                     <span className="text-aureon-text">Giro de Estoque</span>
-                    <span className="text-aureon-gold font-bold">{metricasOperacionais.giroEstoque}x</span>
+                    <span className="text-aureon-gold font-bold">{metricasOperacionais.giroEstoque.toFixed(2)}x</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-aureon-bg rounded border border-aureon-gold/10">
                     <span className="text-aureon-text">Taxa de Conversão</span>
-                    <span className="text-aureon-gold font-bold">{metricasOperacionais.taxaConversao}%</span>
+                    <span className="text-aureon-gold font-bold">{metricasOperacionais.taxaConversao.toFixed(1)}%</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-aureon-bg rounded border border-aureon-gold/10">
                     <span className="text-aureon-text">Valor em Estoque</span>
