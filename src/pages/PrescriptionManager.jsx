@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePrescription } from '../context/PrescriptionContext';
 import { DataContext } from '../context/DataContext';
+import PrescriptionAttachmentUpload from '../components/PrescriptionAttachmentUpload';
 import { 
   Eye, 
   FileText, 
@@ -14,7 +15,8 @@ import {
   User,
   FileCheck,
   Search,
-  Filter
+  Filter,
+  Camera
 } from 'lucide-react';
 
 /**
@@ -43,6 +45,8 @@ export default function PrescriptionManager() {
   const [filtro, setFiltro] = useState('todas'); // todas, ativas, expiradas
   const [busca, setBusca] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [showOCRUpload, setShowOCRUpload] = useState(false);
+  const [ocrData, setOcrData] = useState(null);
 
   // Formulário de nova receita
   const [form, setForm] = useState({
@@ -119,12 +123,20 @@ export default function PrescriptionManager() {
 
   // Handler: Selecionar cliente
   const handleSelectCliente = (clienteId) => {
-    const cliente = clientes.find(c => c.id === clienteId);
+    // ✅ FIX: Converter para número ou string dependendo do tipo de ID usado
+    const cliente = clientes.find(c => String(c.id) === String(clienteId));
     if (cliente) {
       setForm({
         ...form,
         cliente_id: cliente.id,
         cliente_nome: cliente.nome
+      });
+    } else if (clienteId === '') {
+      // Limpar seleção
+      setForm({
+        ...form,
+        cliente_id: '',
+        cliente_nome: ''
       });
     }
   };
@@ -181,6 +193,38 @@ export default function PrescriptionManager() {
       observacoes: '',
       lgpd_consentimento: false
     });
+  };
+
+  // Auto-fill com dados extraídos do OCR
+  const autofillFormWithOCR = (parsedData) => {
+    if (!parsedData) return;
+
+    setForm(prev => ({
+      ...prev,
+      medico_nome: parsedData.medico_nome || prev.medico_nome,
+      medico_crm: parsedData.medico_crm || prev.medico_crm,
+      medico_uf: parsedData.medico_uf || prev.medico_uf,
+      od: parsedData.od ? {
+        esferico: parsedData.od.esferico ?? prev.od.esferico,
+        cilindrico: parsedData.od.cilindrico ?? prev.od.cilindrico,
+        eixo: parsedData.od.eixo ?? prev.od.eixo,
+        dnp: parsedData.od.dnp ?? prev.od.dnp,
+        adicao: parsedData.od.adicao ?? prev.od.adicao
+      } : prev.od,
+      oe: parsedData.oe ? {
+        esferico: parsedData.oe.esferico ?? prev.oe.esferico,
+        cilindrico: parsedData.oe.cilindrico ?? prev.oe.cilindrico,
+        eixo: parsedData.oe.eixo ?? prev.oe.eixo,
+        dnp: parsedData.oe.dnp ?? prev.oe.dnp,
+        adicao: parsedData.oe.adicao ?? prev.oe.adicao
+      } : prev.oe,
+      tipo_lente: parsedData.tipo_lente || prev.tipo_lente,
+      data_emissao: parsedData.data_emissao || prev.data_emissao,
+      observacoes: (prev.observacoes || '') + (prev.observacoes ? '\n' : '') + 
+        `[OCR] Confidence: ${(ocrData?.confidence * 100).toFixed(1)}% | Data: ${new Date().toLocaleString('pt-BR')}`
+    }));
+
+    alert('✅ Dados extraídos do OCR! Verifique os campos antes de salvar.');
   };
 
   return (
@@ -399,6 +443,53 @@ export default function PrescriptionManager() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Seção OCR Upload */}
+              <div className="border-2 border-dashed border-aureon-gold/30 rounded-lg p-4 bg-aureon-bg/50">
+                <button
+                  type="button"
+                  onClick={() => setShowOCRUpload(true)}
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+                >
+                  <Camera size={24} />
+                  📷 Escanear Receita (OCR)
+                </button>
+                <p className="text-aureon-text/50 text-sm text-center mt-2">
+                  Envie uma foto da receita para preenchimento automático
+                </p>
+
+                {showOCRUpload && (
+                  <div className="mt-4">
+                    <PrescriptionAttachmentUpload
+                      onParseComplete={(result) => {
+                        setOcrData(result);
+                        autofillFormWithOCR(result.parsed);
+                        setShowOCRUpload(false);
+                      }}
+                      onCancel={() => setShowOCRUpload(false)}
+                    />
+                  </div>
+                )}
+
+                {ocrData && (
+                  <div className={`mt-4 p-3 rounded-lg border ${
+                    ocrData.confidence >= 0.8 
+                      ? 'bg-green-500/10 border-green-500/30' 
+                      : ocrData.confidence >= 0.6 
+                      ? 'bg-yellow-500/10 border-yellow-500/30'
+                      : 'bg-red-500/10 border-red-500/30'
+                  }`}>
+                    <p className="text-sm font-semibold">
+                      OCR Confidence: {(ocrData.confidence * 100).toFixed(1)}%
+                    </p>
+                    {ocrData.confidence < 0.7 && (
+                      <p className="text-sm text-yellow-400 mt-1">
+                        ⚠️ Confiança baixa. Verifique todos os campos.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Olho Direito (OD) */}
