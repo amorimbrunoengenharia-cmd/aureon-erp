@@ -89,6 +89,15 @@ SupplierQuotation.belongsTo(User, { foreignKey: 'aprovado_por', as: 'approver' }
 Supplier.hasMany(SupplierQuotation, { foreignKey: 'supplier_id', as: 'quotations' });
 Product.hasMany(SupplierQuotation, { foreignKey: 'produto_id', as: 'quotations' });
 
+// BugReport relationships
+BugReport.belongsTo(Tenant, { foreignKey: 'tenant_id', as: 'tenant' });
+BugReport.belongsTo(User, { foreignKey: 'reported_by', as: 'reporter' });
+BugReport.belongsTo(User, { foreignKey: 'assigned_to', as: 'assignee' });
+BugReport.belongsTo(User, { foreignKey: 'resolved_by', as: 'resolver' });
+User.hasMany(BugReport, { foreignKey: 'reported_by', as: 'reported_bugs' });
+User.hasMany(BugReport, { foreignKey: 'assigned_to', as: 'assigned_bugs' });
+Tenant.hasMany(BugReport, { foreignKey: 'tenant_id', as: 'bug_reports' });
+
 // ===== EXPORTS =====
 
 const models = {
