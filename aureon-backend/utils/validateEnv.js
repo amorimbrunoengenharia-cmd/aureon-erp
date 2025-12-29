@@ -157,7 +157,7 @@ export function generateSecureKey(bytes = 32) {
  */
 export function printEnvSummary() {
   const env = process.env.NODE_ENV || 'development';
-  const usePostgres = process.env.USE_POSTGRES === 'true' || env === 'production';
+  const usePostgres = process.env.USE_POSTGRES === 'true';
 
   logger.info('📋 Environment Configuration:');
   logger.info(`   Environment: ${env}`);

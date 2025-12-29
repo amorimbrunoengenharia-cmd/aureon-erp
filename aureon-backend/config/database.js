@@ -3,9 +3,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Use SQLite for development, PostgreSQL for production
+// Use SQLite or PostgreSQL based on USE_POSTGRES env var (not automatic in production)
 const isProduction = process.env.NODE_ENV === 'production';
-const usePostgres = process.env.USE_POSTGRES === 'true' || isProduction;
+const usePostgres = process.env.USE_POSTGRES === 'true';
 
 // PostgreSQL SSL configuration for production
 const sslConfig = isProduction && process.env.DB_SSL === 'true'
