@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: aureon-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd aureon-backend && npm install
+    startCommand: cd aureon-backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+    healthCheckPath: /health
+    autoDeploy: true
+
+  - type: web
+    name: aureon-frontend
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd aureon-os && npm install && npm run build
+    staticPublishPath: ./aureon-os/dist
+    envVars:
+      - key: NODE_ENV
+        value: production
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -1,0 +1,30 @@
+version: 2
+services:
+  - name: aureon-backend
+    type: web
+    env: node
+    plan: starter
+    repo: https://github.com/amorimbrunoengenharia-cmd/aureon-erp
+    branch: feat/prescriptions-sim-ai-20251209
+    rootDir: /aureon-backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    healthCheckPath: /health
+    
+  - name: aureon-frontend
+    type: web
+    env: node
+    plan: starter
+    repo: https://github.com/amorimbrunoengenharia-cmd/aureon-erp
+    branch: feat/prescriptions-sim-ai-20251209
+    rootDir: /aureon-os
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: NODE_ENV
+        value: production

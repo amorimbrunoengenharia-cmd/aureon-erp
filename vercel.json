@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "aureon-os/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "aureon-backend/server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "aureon-backend/server.js"
+    },
+    {
+      "src": "/health",
+      "dest": "aureon-backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "aureon-os/dist/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "regions": ["gru1"]
+}

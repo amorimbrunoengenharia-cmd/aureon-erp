@@ -1,0 +1,1 @@
+web: cd aureon-backend && npm start
