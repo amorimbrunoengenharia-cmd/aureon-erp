@@ -81,8 +81,27 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(compression()); // Gzip compression
+
+// CORS configuration - allow production and preview URLs
+const corsOrigin = process.env.CORS_ORIGIN 
+  ? (req, callback) => {
+      const allowedOrigins = [
+        process.env.CORS_ORIGIN,
+        'http://localhost:5173',
+        'http://localhost:5174'
+      ];
+      // Allow Vercel preview deployments (*.vercel.app)
+      const origin = req.header('Origin');
+      if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    }
+  : ['http://localhost:5173', 'http://localhost:5174'];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || ['http://localhost:5173', 'http://localhost:5174'],
+  origin: corsOrigin,
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
