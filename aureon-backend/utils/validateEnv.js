@@ -17,15 +17,19 @@ const requiredVars = {
     'PORT',
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
-    'DB_HOST',
-    'DB_PORT',
-    'DB_NAME',
-    'DB_USER',
-    'DB_PASSWORD',
     'MARKETPLACE_ENCRYPTION_KEY',
     'SESSION_SECRET'
   ]
 };
+
+// PostgreSQL vars - only required if USE_POSTGRES=true
+const postgresVars = [
+  'DB_HOST',
+  'DB_PORT',
+  'DB_NAME',
+  'DB_USER',
+  'DB_PASSWORD'
+];
 
 const recommendedVars = {
   production: [
@@ -43,7 +47,14 @@ const recommendedVars = {
  */
 export function validateEnv() {
   const env = process.env.NODE_ENV || 'development';
-  const required = requiredVars[env] || requiredVars.development;
+  const usePostgres = process.env.USE_POSTGRES === 'true';
+  let required = requiredVars[env] || requiredVars.development;
+  
+  // Add PostgreSQL vars only if USE_POSTGRES=true
+  if (usePostgres && env === 'production') {
+    required = [...required, ...postgresVars];
+  }
+  
   const missing = [];
 
   // Check required variables
