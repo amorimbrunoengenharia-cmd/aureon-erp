@@ -83,27 +83,30 @@ app.use(helmet({
 app.use(compression()); // Gzip compression
 
 // CORS configuration - allow production and preview URLs
-const corsOrigin = process.env.CORS_ORIGIN 
-  ? (req, callback) => {
-      const allowedOrigins = [
-        process.env.CORS_ORIGIN,
-        'http://localhost:5173',
-        'http://localhost:5174'
-      ];
-      // Allow Vercel preview deployments (*.vercel.app)
-      const origin = req.header('Origin');
-      if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app'))) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) {
+      return callback(null, true);
     }
-  : ['http://localhost:5173', 'http://localhost:5174'];
-
-app.use(cors({
-  origin: corsOrigin,
+    
+    const allowedOrigins = [
+      process.env.CORS_ORIGIN || 'https://aureon-erp.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:5174'
+    ];
+    
+    // Check if origin is in allowed list OR ends with .vercel.app
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
