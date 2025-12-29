@@ -97,8 +97,8 @@ export function validateEnv() {
     }
   }
 
-  // Validate database configuration
-  if (process.env.USE_POSTGRES === 'true' || env === 'production') {
+  // Validate database configuration - only if PostgreSQL is explicitly enabled
+  if (process.env.USE_POSTGRES === 'true') {
     const dbVars = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
     const missingDb = dbVars.filter(v => !process.env[v]);
     
@@ -114,10 +114,14 @@ export function validateEnv() {
     const defaults = {
       JWT_SECRET: 'your_super_secret_jwt_key',
       JWT_REFRESH_SECRET: 'your_super_secret_refresh_key',
-      DB_PASSWORD: 'postgres',
       SESSION_SECRET: 'your_session_secret',
       MARKETPLACE_ENCRYPTION_KEY: 'your_32_byte_hex_encryption_key'
     };
+    
+    // Only check DB_PASSWORD if using PostgreSQL
+    if (process.env.USE_POSTGRES === 'true') {
+      defaults.DB_PASSWORD = 'postgres';
+    }
 
     Object.entries(defaults).forEach(([key, defaultValue]) => {
       if (process.env[key] && process.env[key].includes(defaultValue.substring(0, 20))) {
