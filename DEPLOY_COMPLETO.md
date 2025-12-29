@@ -39,9 +39,22 @@ O **Render** hospeda frontend e backend separadamente, mas é o mais fácil e co
    ```
    NODE_ENV=production
    PORT=10000
-   DATABASE_URL=postgresql://... (Render criará automaticamente)
-   JWT_SECRET=seu_secret_super_seguro_aqui
-   JWT_REFRESH_SECRET=outro_secret_diferente_aqui
+   
+   # JWT
+   JWT_SECRET=seu_secret_super_seguro_minimo_32_caracteres
+   JWT_REFRESH_SECRET=outro_secret_diferente_tambem_32_chars
+   
+   # Database SQLite (mais simples)
+   DB_TYPE=sqlite
+   
+   # Session
+   SESSION_SECRET=session_secret_super_seguro_aqui_32_chars
+   
+   # Marketplace (opcional)
+   MARKETPLACE_ENCRYPTION_KEY=encryption_key_32_caracteres_minimo
+   
+   # CORS
+   FRONTEND_URL=https://aureon-erp.vercel.app
    ```
 
 4. **Criar Database PostgreSQL (Opcional):**
@@ -58,16 +71,21 @@ O **Render** hospeda frontend e backend separadamente, mas é o mais fácil e co
 
 ### PARTE 2: Frontend no Vercel
 
-1. **Atualizar variável de ambiente:**
+1. **Atualizar variáveis de ambiente:**
    - No Vercel, vá em Settings → Environment Variables
-   - Adicione:
+   - **IMPORTANTE:** Adicione em **Production**, **Preview** e **Development**
+   - Adicione estas variáveis:
      ```
      VITE_API_BASE_URL=https://aureon-backend.onrender.com/api
+     VITE_BACKEND_URL=https://aureon-backend.onrender.com
+     NODE_ENV=production
      ```
 
 2. **Redeploy:**
    - Vá em Deployments
-   - Clique nos 3 pontos → Redeploy
+   - Clique nos 3 pontos do último deploy → **Redeploy**
+   - ✅ Marque "Use existing Build Cache"
+   - Aguarde 1-2 minutos
 
 ---
 
