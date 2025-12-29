@@ -1,15 +1,8 @@
 {
-  "version": 2,
   "buildCommand": "cd aureon-os && npm install && npm run build",
   "outputDirectory": "aureon-os/dist",
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
+
