@@ -71,20 +71,25 @@ O **Render** hospeda frontend e backend separadamente, mas é o mais fácil e co
 
 ### PARTE 2: Frontend no Vercel
 
-1. **Atualizar variáveis de ambiente:**
-   - No Vercel, vá em Settings → Environment Variables
-   - **IMPORTANTE:** Adicione em **Production**, **Preview** e **Development**
-   - Adicione estas variáveis:
-     ```
-     VITE_API_BASE_URL=https://aureon-backend.onrender.com/api
-     VITE_BACKEND_URL=https://aureon-backend.onrender.com
-     NODE_ENV=production
-     ```
+1. **Configurar variáveis de ambiente:**
+   - Acesse: https://vercel.com/amorimbrunoengenharia-cmds-projects/aureon-erp
+   - No menu lateral, clique em **Settings** (⚙️)
+   - Clique em **Environment Variables**
+   - Adicione a seguinte variável:
+     - **Name:** `VITE_API_URL`
+     - **Value:** `https://aureon-backend.onrender.com/api`
+     - **⚠️ IMPORTANTE:** Marque **TODOS** os checkboxes:
+       - ☑️ Production
+       - ☑️ Preview  
+       - ☑️ Development
+   - Clique em **Save**
 
 2. **Redeploy:**
-   - Vá em Deployments
-   - Clique nos 3 pontos do último deploy → **Redeploy**
+   - Vá em **Deployments** (no menu lateral)
+   - Encontre o último deploy
+   - Clique nos **3 pontos** (⋮) → **Redeploy**
    - ✅ Marque "Use existing Build Cache"
+   - Clique em **Redeploy**
    - Aguarde 1-2 minutos
 
 ---
@@ -152,12 +157,14 @@ services:
 
 ## ⚠️ Problema Atual
 
-O erro que você está vendo é porque:
+O erro que você está vendo (`localhost:5000`) acontece porque:
 - Frontend está no Vercel ✅
-- Backend **NÃO** está rodando ❌
-- Frontend tentando conectar em `localhost:5000` (errado)
+- Backend está no Render ✅
+- **MAS** variável `VITE_API_URL` não está configurada no Vercel ❌
 
-**Solução:** Deploy do backend no Render conforme instruções acima.
+**Solução:** Adicione `VITE_API_URL` nas variáveis de ambiente do Vercel (veja PARTE 2 acima).
+
+**IMPORTANTE:** O arquivo `.env.production` no código NÃO é usado pelo Vercel. Você PRECISA adicionar as variáveis manualmente no dashboard do Vercel.
 
 ---
 
