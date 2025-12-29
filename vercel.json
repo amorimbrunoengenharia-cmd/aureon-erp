@@ -1,34 +1,19 @@
 {
   "version": 2,
-  "builds": [
+  "buildCommand": "cd aureon-os && npm install && npm run build",
+  "outputDirectory": "aureon-os/dist",
+  "rewrites": [
     {
-      "src": "aureon-os/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/api/:path*",
+      "destination": "https://seu-backend.render.com/api/:path*"
     },
     {
-      "src": "aureon-backend/server.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "aureon-backend/server.js"
-    },
-    {
-      "src": "/health",
-      "dest": "aureon-backend/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "aureon-os/dist/$1"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "env": {
-    "NODE_ENV": "production"
-  },
-  "regions": ["gru1"]
+    "NODE_ENV": "production",
+    "VITE_API_BASE_URL": "/api"
+  }
 }

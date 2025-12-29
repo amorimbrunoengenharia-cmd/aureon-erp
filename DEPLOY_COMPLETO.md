@@ -1,175 +1,185 @@
-# 🚀 Deploy Completo - Frontend + Backend no Vercel (GRÁTIS)
+# 🚀 Deploy Completo - Frontend + Backend Online
 
-## ✅ Solução Escolhida: Vercel
+## ⚡ Solução Mais Simples: Render.com (Tudo Grátis)
 
-O **Vercel** é gratuito e hospeda TUDO:
-- ✅ Frontend (React)
-- ✅ Backend (Node.js API)
-- ✅ Tudo no mesmo lugar
+O **Render** hospeda frontend e backend separadamente, mas é o mais fácil e confiável:
+- ✅ Frontend (Static Site)
+- ✅ Backend (Web Service)
+- ✅ PostgreSQL incluído (grátis)
 - ✅ Deploy automático do GitHub
 - ✅ HTTPS gratuito
-- ✅ Domínio .vercel.app incluído
+- ✅ Mais confiável que Vercel para Node.js
 
 ---
 
-## 🔧 Como Colocar Online (5 minutos)
+## 🚀 Como Colocar Online (10 minutos)
 
-### Passo 1: Criar Conta no Vercel
+### PARTE 1: Backend no Render
 
-1. Acesse: https://vercel.com/signup
-2. Clique em **"Continue with GitHub"**
-3. Autorize o Vercel a acessar seus repositórios
+1. **Criar conta:**
+   - Acesse: https://render.com/
+   - Clique em **"Get Started"**
+   - Continue com GitHub
 
-### Passo 2: Importar Projeto
+2. **Criar Web Service (Backend):**
+   - No dashboard, clique em **"New +"** → **"Web Service"**
+   - Conecte ao repositório: **aureon-erp**
+   - Configure:
+     - **Name:** aureon-backend
+     - **Region:** Oregon (US West)
+     - **Branch:** feat/prescriptions-sim-ai-20251209
+     - **Root Directory:** aureon-backend
+     - **Runtime:** Node
+     - **Build Command:** `npm install`
+     - **Start Command:** `npm start`
+     - **Instance Type:** Free
 
-1. No dashboard do Vercel, clique em **"Add New..."**
-2. Selecione **"Project"**
-3. Procure e selecione: **aureon-erp**
-4. Configure:
-   - **Framework Preset:** Vite
-   - **Root Directory:** `aureon-os`
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
+3. **Adicionar variáveis de ambiente:**
+   Clique em **"Environment"** e adicione:
+   ```
+   NODE_ENV=production
+   PORT=10000
+   DATABASE_URL=postgresql://... (Render criará automaticamente)
+   JWT_SECRET=seu_secret_super_seguro_aqui
+   JWT_REFRESH_SECRET=outro_secret_diferente_aqui
+   ```
 
-### Passo 3: Configurar Variáveis de Ambiente
+4. **Criar Database PostgreSQL (Opcional):**
+   - "New +" → "PostgreSQL"
+   - Name: aureon-db
+   - Region: Same as backend
+   - Instance: Free
+   - Copie a DATABASE_URL e adicione no backend
 
-Em **Environment Variables**, adicione:
+5. **Deploy:**
+   - Clique em **"Create Web Service"**
+   - Aguarde 3-5 minutos
+   - Anote a URL: `https://aureon-backend.onrender.com`
 
+### PARTE 2: Frontend no Vercel
+
+1. **Atualizar variável de ambiente:**
+   - No Vercel, vá em Settings → Environment Variables
+   - Adicione:
+     ```
+     VITE_API_BASE_URL=https://aureon-backend.onrender.com/api
+     ```
+
+2. **Redeploy:**
+   - Vá em Deployments
+   - Clique nos 3 pontos → Redeploy
+
+---
+
+## 🌐 Seus Sites Ficarão em:
+
+**Frontend:** https://aureon-erp.vercel.app  
+**Backend:** https://aureon-backend.onrender.com  
+**API:** https://aureon-backend.onrender.com/api
+
+---
+
+## 🎯 Alternativa: Tudo no Render (Mais Simples)
+
+Se preferir tudo no Render:
+
+### Frontend no Render (Static Site)
+
+1. **New +** → **Static Site**
+2. Configure:
+   - **Name:** aureon-frontend
+   - **Branch:** feat/prescriptions-sim-ai-20251209
+   - **Root Directory:** aureon-os
+   - **Build Command:** `npm install && npm run build`
+   - **Publish Directory:** dist
+3. **Environment Variables:**
+   ```
+   NODE_ENV=production
+   VITE_API_BASE_URL=/api
+   ```
+4. **Redirect Rules** (para SPA routing):
+   ```
+   /*  /index.html  200
+   ```
+
+### Configurar Proxy
+
+No `render.yaml` (já está criado):
+```yaml
+services:
+  - type: web
+    name: aureon-backend
+    # ... configuração do backend
+    
+  - type: web
+    name: aureon-frontend
+    # ... configuração do frontend
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://aureon-backend.onrender.com/api/:splat
 ```
-NODE_ENV=production
-VITE_API_URL=/api
-DATABASE_URL=sua_database_url_aqui
-JWT_SECRET=seu_jwt_secret_aqui
-JWT_REFRESH_SECRET=seu_jwt_refresh_secret_aqui
-```
-
-### Passo 4: Deploy
-
-1. Clique em **"Deploy"**
-2. Aguarde 2-3 minutos
-3. ✅ Site online!
 
 ---
 
-## 🌐 Seu Site Ficará em:
+## 📊 Resumo das Opções
 
-```
-https://aureon-erp.vercel.app
-```
-
-Ou domínio customizado (ex: aureon-erp.com) - configurável no painel do Vercel
-
----
-
-## 🔄 Deploy Automático
-
-Depois do primeiro deploy:
-- Todo push para GitHub = deploy automático
-- Não precisa fazer nada manualmente
-- Preview de PRs automático
+| Opção | Complexidade | Confiabilidade | Custo |
+|-------|-------------|----------------|-------|
+| **Render (Backend) + Vercel (Frontend)** | ⭐⭐ Médio | ⭐⭐⭐ Alta | 🆓 Grátis |
+| **Render (Tudo)** | ⭐ Fácil | ⭐⭐⭐ Alta | 🆓 Grátis |
+| **Vercel (Tudo)** | ⭐⭐⭐ Difícil | ⭐⭐ Média | 🆓 Grátis |
 
 ---
 
-## 📦 Arquivos Configurados
+## ⚠️ Problema Atual
 
-- ✅ `vercel.json` - Configuração do Vercel (frontend + backend)
-- ✅ `aureon-os/package.json` - Script `vercel-build` adicionado
-- ✅ Rotas configuradas:
-  - `/api/*` → Backend (Node.js)
-  - `/health` → Backend (health check)
-  - `/*` → Frontend (React)
+O erro que você está vendo é porque:
+- Frontend está no Vercel ✅
+- Backend **NÃO** está rodando ❌
+- Frontend tentando conectar em `localhost:5000` (errado)
 
----
-
-## 🎯 Alternativa: Continuar com GitHub Pages + Render
-
-Se preferir a solução anterior (GitHub Pages para frontend):
-
-### Frontend: GitHub Pages (já configurado)
-1. Acesse: https://github.com/amorimbrunoengenharia-cmd/aureon-erp/settings/pages
-2. Source: **GitHub Actions**
-3. Seu site: https://amorimbrunoengenharia-cmd.github.io/aureon-erp/
-
-### Backend: Render.com (grátis)
-1. Acesse: https://render.com/
-2. "New" → "Web Service"
-3. Conecte ao GitHub: aureon-erp
-4. Configure:
-   - **Root Directory:** `aureon-backend`
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-5. Deploy!
+**Solução:** Deploy do backend no Render conforme instruções acima.
 
 ---
 
-## 📊 Comparação de Opções
+## 🔧 Arquivos Atualizados
 
-| Opção | Frontend | Backend | Complexidade | Custo |
-|-------|----------|---------|--------------|-------|
-| **Vercel** | ✅ Sim | ✅ Sim | ⭐ Fácil | 🆓 Grátis |
-| GitHub Pages + Render | ✅ Sim | ✅ Sim | ⭐⭐ Médio | 🆓 Grátis |
-| GitHub Pages only | ✅ Sim | ❌ Não | ⭐ Fácil | 🆓 Grátis |
-
----
-
-## 🎯 Recomendação: **Use Vercel** (Tudo em Um)
-
-**Por quê?**
-- ✅ 1 único deploy (não precisa de 2 serviços)
-- ✅ Mesma URL para frontend e backend
-- ✅ Sem problema de CORS
-- ✅ Deploy automático
-- ✅ Muito mais simples
+- ✅ `.env.production` - Variáveis para produção
+- ✅ `vercel.json` - Configurado para proxy
+- ✅ `render.yaml` - Backend + Frontend no Render
 
 ---
 
 ## 🚀 Links Rápidos
 
-- **Criar conta Vercel:** https://vercel.com/signup
-- **Dashboard:** https://vercel.com/dashboard
-- **Documentação:** https://vercel.com/docs
+**Backend (Render):**
+- https://render.com/
+- https://dashboard.render.com/
 
----
-
-## 🔐 Database (Opcional)
-
-Se precisar de PostgreSQL gratuito:
-
-**Opção 1: Neon (Recomendado)**
-- https://neon.tech
-- PostgreSQL gratuito
-- Fácil de conectar
-
-**Opção 2: Supabase**
-- https://supabase.com
-- PostgreSQL + Backend as a Service
-- Grátis até 500MB
-
-**Opção 3: Vercel Postgres**
-- Integrado no Vercel
-- https://vercel.com/docs/storage/vercel-postgres
+**Frontend (Vercel - já está):**
+- https://vercel.com/dashboard
+- Seu projeto: https://aureon-erp.vercel.app
 
 ---
 
 ## ✅ Checklist Completo
 
-### Vercel (Recomendado)
-- [ ] Criar conta no Vercel
-- [ ] Conectar com GitHub
-- [ ] Importar projeto aureon-erp
-- [ ] Configurar variáveis de ambiente
-- [ ] Deploy
-- [ ] Testar site online
+### Backend no Render
+- [ ] Conta criada no Render
+- [ ] Web Service criado (aureon-backend)
+- [ ] Variáveis de ambiente configuradas
+- [ ] PostgreSQL criado (opcional)
+- [ ] Backend deployado
+- [ ] URL anotada: https://aureon-backend.onrender.com
 
-### Alternativa (GitHub + Render)
-- [ ] GitHub Pages habilitado
-- [ ] Workflow executado
-- [ ] Conta no Render.com
-- [ ] Backend deployado no Render
-- [ ] URL da API atualizada no frontend
-- [ ] Testar integração
+### Frontend no Vercel
+- [x] Já está online
+- [ ] VITE_API_BASE_URL atualizado com URL do backend
+- [ ] Redeploy feito
+- [ ] Testado e funcionando
 
 ---
 
 **Última atualização:** 29 de Dezembro de 2025  
-**Status:** Pronto para deploy no Vercel (mais simples e tudo em um lugar)
+**Próximo passo:** Deploy do backend no Render (siga PARTE 1 acima)
