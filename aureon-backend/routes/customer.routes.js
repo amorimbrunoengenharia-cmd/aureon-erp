@@ -278,7 +278,7 @@ router.get('/history', async (req, res) => {
           ultima_compra: orders.length > 0 ? orders[0].created_at : null
         },
         top_produtos: topProdutos,
-        compras_por_mes: Object.values(comprasPorMes).sort((a, b) => b.mes.localeCompare(a.mes)),
+        compras_por_mes: Object.values(comprasPorMes).sort((a, b) => a.mes.localeCompare(b.mes)),
         pedidos_recentes: orders.slice(0, 10)
       }
     });

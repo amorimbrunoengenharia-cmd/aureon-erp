@@ -113,7 +113,7 @@ router.get('/trace/:traceId', authenticate, authorize('CEO'), async (req, res, n
  * GET /api/events/dlq
  * Listar eventos na Dead Letter Queue (status=dlq)
  */
-router.get('/dlq', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/dlq', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const events = await Event.findAll({
       where: { status: 'dlq' },
@@ -134,7 +134,7 @@ router.get('/dlq', authenticate, authorize('CEO'), async (req, res, next) => {
  * POST /api/events/:id/retry
  * Retry de evento que falhou ou está na DLQ
  */
-router.post('/:id/retry', authenticate, authorize('CEO'), async (req, res, next) => {
+router.post('/:id/retry', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const event = await Event.findByPk(req.params.id);
 
@@ -174,7 +174,7 @@ router.post('/:id/retry', authenticate, authorize('CEO'), async (req, res, next)
  * GET /api/events/stats
  * Estatísticas de eventos
  */
-router.get('/stats', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/stats', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const { data_inicio, data_fim } = req.query;
     
@@ -212,7 +212,7 @@ router.get('/stats', authenticate, authorize('CEO'), async (req, res, next) => {
  * POST /api/events/retry-batch
  * Retry em lote de eventos DLQ
  */
-router.post('/retry-batch', authenticate, authorize('CEO'), async (req, res, next) => {
+router.post('/retry-batch', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const { limit = 10, priority } = req.body;
     

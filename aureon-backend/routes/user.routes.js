@@ -11,23 +11,31 @@ router.use(authenticate);
 
 /**
  * POST /api/users
- * Create new user (CEO only)
+ * Create new user (CEO and IT team)
  */
 router.post(
   '/',
-  authorize(['CEO']),
+  authorize(['CEO', 'IT']),
   [
-    body('username').trim().isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
+    body('username')
+      .trim()
+      .isLength({ min: 3, max: 50 })
+      .withMessage('Username must be 3-50 characters')
+      .matches(/^[a-zA-ZÀ-ÿ0-9\s._-]+$/)
+      .withMessage('Username can only contain letters, numbers, spaces, dots, underscores and hyphens'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').isIn(['CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO']).withMessage('Invalid role'),
+    body('role').isIn(['CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO', 'IT']).withMessage('Invalid role'),
     body('tenant_id').optional().isUUID().withMessage('Invalid tenant ID')
   ],
   async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ 
+          success: false,
+          errors: errors.array() 
+        });
       }
 
       const user = await userService.createUser(req.body, req.user);
@@ -46,6 +54,19 @@ router.post(
         }
       });
     } catch (error) {
+      logger.error('Error creating user', { error: error.message, stack: error.stack });
+      
+      // Se for erro de validação ou duplicação, retorna 400
+      if (error.name === 'SequelizeValidationError' || 
+          error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({ 
+          success: false,
+          message: error.message || 'Erro de validação',
+          errors: error.errors?.map(e => ({ field: e.path, message: e.message }))
+        });
+      }
+      
+      // Outros erros passam para o middleware de erro
       next(error);
     }
   }
@@ -53,11 +74,11 @@ router.post(
 
 /**
  * GET /api/users
- * List all users (CEO only)
+ * List all users (CEO and IT only)
  */
 router.get(
   '/',
-  authorize(['CEO']),
+  authorize(['CEO', 'IT']),
   async (req, res, next) => {
     try {
       const { role, active, tenant_id, page = 1, limit = 50 } = req.query;
@@ -106,14 +127,14 @@ router.get(
 
 /**
  * PATCH /api/users/:id
- * Update user (CEO only)
+ * Update user (CEO and IT only)
  */
 router.patch(
   '/:id',
-  authorize(['CEO']),
+  authorize(['CEO', 'IT']),
   [
     body('email').optional().isEmail().withMessage('Valid email required'),
-    body('role').optional().isIn(['CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO']).withMessage('Invalid role'),
+    body('role').optional().isIn(['CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO', 'IT']).withMessage('Invalid role'),
     body('active').optional().isBoolean().withMessage('Active must be boolean'),
     body('settings').optional().isObject().withMessage('Settings must be an object')
   ],
@@ -140,11 +161,11 @@ router.patch(
 
 /**
  * DELETE /api/users/:id
- * Deactivate user (CEO only)
+ * Deactivate user (CEO and IT only)
  */
 router.delete(
   '/:id',
-  authorize(['CEO']),
+  authorize(['CEO', 'IT']),
   async (req, res, next) => {
     try {
       await userService.deactivateUser(req.params.id, req.user);
@@ -172,8 +193,8 @@ router.post(
       const { id } = req.params;
       const { newPassword } = req.body;
 
-      // Check if user is CEO or resetting own password
-      if (req.user.role !== 'CEO' && req.user.id !== id) {
+      // Check if user is CEO/IT or resetting own password
+      if (!['CEO', 'IT'].includes(req.user.role) && req.user.id !== id) {
         return res.status(403).json({
           error: 'Forbidden',
           message: 'You can only reset your own password'
@@ -203,14 +224,14 @@ router.post(
 
 /**
  * POST /api/users/invite
- * Send invite email (CEO only)
+ * Send invite email (CEO and IT only)
  */
 router.post(
   '/invite',
-  authorize(['CEO']),
+  authorize(['CEO', 'IT']),
   [
     body('email').isEmail().withMessage('Valid email required'),
-    body('role').isIn(['CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO']).withMessage('Invalid role')
+    body('role').isIn(['CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO', 'IT']).withMessage('Invalid role')
   ],
   async (req, res, next) => {
     try {

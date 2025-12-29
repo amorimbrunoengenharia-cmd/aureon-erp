@@ -56,25 +56,45 @@ const router = express.Router();
  */
 router.post('/login', authLimiter, async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    // Find user
+    // ✅ Trim username to match validation on user creation
+    username = username.trim();
+
+    // ✅ DEBUG: Log login attempt
+    logger.info('Login attempt:', { username, hasPassword: !!password });
+
+    // ✅ Find user by username OR email (case-insensitive)
     const user = await User.findOne({ 
-      where: { username, active: true } 
+      where: { 
+        [Op.or]: [
+          { username: username },
+          { email: username }
+        ],
+        active: true 
+      } 
     });
 
+    // ✅ DEBUG: Log user found
     if (!user) {
+      logger.warn('User not found:', { username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    logger.info('User found:', { id: user.id, username: user.username });
 
     // Check password
     const isValidPassword = await user.comparePassword(password);
     
+    // ✅ DEBUG: Log password validation
+    logger.info('Password validation:', { username: user.username, isValid: isValidPassword });
+    
     if (!isValidPassword) {
+      logger.warn('Invalid password for user:', { username: user.username });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 

@@ -82,6 +82,16 @@ const defaultUsers = [
     settings: {
       theme: 'dark'
     }
+  },
+  {
+    username: 'itteam',
+    password: 'it123',
+    email: 'it@aureon.com',
+    role: 'IT',
+    tenant_id: '00000000-0000-0000-0000-000000000001',
+    settings: {
+      theme: 'dark'
+    }
   }
 ];
 

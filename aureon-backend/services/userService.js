@@ -1,4 +1,5 @@
 import { User, Tenant, AuditLog } from '../models/index.js';
+import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import logger from '../utils/logger.js';
@@ -12,7 +13,7 @@ class UserService {
       // Check if username or email already exists
       const existingUser = await User.findOne({
         where: {
-          $or: [
+          [Op.or]: [
             { username: userData.username },
             { email: userData.email }
           ]

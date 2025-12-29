@@ -9,9 +9,9 @@ const router = express.Router();
 
 /**
  * GET /api/audit
- * Listar logs de auditoria (apenas CEO)
+ * Listar logs de auditoria (CEO e IT)
  */
-router.get('/', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const { user_id, action, resource_type, resource_id, data_inicio, data_fim, page = 1, limit = 100 } = req.query;
     
@@ -58,7 +58,7 @@ router.get('/', authenticate, authorize('CEO'), async (req, res, next) => {
  * GET /api/audit/user/:userId
  * Histórico de atividades de um usuário específico
  */
-router.get('/user/:userId', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/user/:userId', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const { action, data_inicio, data_fim, page = 1, limit = 50 } = req.query;
     
@@ -107,7 +107,7 @@ router.get('/user/:userId', authenticate, authorize('CEO'), async (req, res, nex
  * GET /api/audit/stats
  * Estatísticas de auditoria
  */
-router.get('/stats', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/stats', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const { data_inicio, data_fim } = req.query;
     
@@ -196,7 +196,7 @@ router.get('/user/:userId', authenticate, authorize('CEO'), async (req, res, nex
  * GET /api/audit/resource/:resourceType/:resourceId
  * Obter histórico de um recurso específico
  */
-router.get('/resource/:resourceType/:resourceId', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/resource/:resourceType/:resourceId', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const { resourceType, resourceId } = req.params;
     const result = await auditService.getResourceHistory(resourceType, resourceId, req.query);
@@ -210,7 +210,7 @@ router.get('/resource/:resourceType/:resourceId', authenticate, authorize('CEO')
  * GET /api/audit/report
  * Gerar relatório de auditoria com filtros avançados
  */
-router.get('/report', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/report', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const result = await auditService.getAuditReport(req.query);
     res.json(result);
@@ -223,7 +223,7 @@ router.get('/report', authenticate, authorize('CEO'), async (req, res, next) => 
  * GET /api/audit/recent
  * Obter mudanças recentes
  */
-router.get('/recent', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/recent', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const result = await auditService.getRecentChanges(req.query);
     res.json(result);
@@ -236,7 +236,7 @@ router.get('/recent', authenticate, authorize('CEO'), async (req, res, next) => 
  * GET /api/audit/export
  * Exportar logs de auditoria
  */
-router.get('/export', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/export', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const { format = 'json', ...filters } = req.query;
     const result = await auditService.exportAuditLog(filters, format);
@@ -264,7 +264,7 @@ router.get('/export', authenticate, authorize('CEO'), async (req, res, next) => 
  * GET /api/audit/statistics
  * Obter estatísticas de auditoria
  */
-router.get('/statistics/:period?', authenticate, authorize('CEO'), async (req, res, next) => {
+router.get('/statistics/:period?', authenticate, authorize(['CEO', 'IT']), async (req, res, next) => {
   try {
     const period = req.params.period || '30d';
     const result = await auditService.getAuditStatistics(period);

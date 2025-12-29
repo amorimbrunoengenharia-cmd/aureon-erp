@@ -72,7 +72,7 @@ router.get(
       if (reported_by) filters.reported_by = reported_by;
 
       // Non-admin users only see their own reports
-      if (!['CEO', 'GERENTE'].includes(req.user.role)) {
+      if (!['CEO', 'GERENTE', 'IT'].includes(req.user.role)) {
         filters.reported_by = req.user.id;
       }
 
@@ -98,7 +98,7 @@ router.get(
  */
 router.get(
   '/stats',
-  authorize(['CEO', 'GERENTE']),
+  authorize(['CEO', 'GERENTE', 'IT']),
   async (req, res, next) => {
     try {
       const stats = await bugReportService.getBugReportStats();
@@ -179,7 +179,7 @@ router.patch(
  */
 router.post(
   '/:id/assign',
-  authorize(['CEO', 'GERENTE']),
+  authorize(['CEO', 'GERENTE', 'IT']),
   [
     body('assigned_to').isUUID().withMessage('Valid user ID required')
   ],
@@ -255,7 +255,7 @@ router.post(
  */
 router.delete(
   '/:id',
-  authorize(['CEO']),
+  authorize(['CEO', 'IT']),
   async (req, res, next) => {
     try {
       await bugReportService.deleteBugReport(req.params.id, req.user);

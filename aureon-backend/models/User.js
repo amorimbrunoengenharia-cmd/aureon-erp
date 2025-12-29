@@ -46,7 +46,7 @@ User.init(
       comment: 'ID do tenant (null para super admin)'
     },
     role: {
-      type: DataTypes.ENUM('CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO'),
+      type: DataTypes.ENUM('CEO', 'VENDAS', 'ESTOQUE', 'COMPRAS', 'FINANCEIRO', 'IT'),
       allowNull: false,
       defaultValue: 'VENDAS'
     },
