@@ -34,7 +34,7 @@
   "dependencies": {
     "chart.js": "^4.5.1",
     "html2canvas": "^1.4.1",
-    "html2pdf.js": "^0.12.1",
+    "html2pdf.js": "^0.14.0",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.344.0",
